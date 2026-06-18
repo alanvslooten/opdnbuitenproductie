@@ -37,6 +37,10 @@ services:
       # Origin van de frontend; staat directe (CORS-)verzoeken vanaf de client toe.
       - key: Cors__Origins
         value: https://kinderkompas-client.onrender.com
+      # Demo: 2FA uit voor Beheerder/Groepsportaal → inloggen met alleen
+      # gebruikersnaam + wachtwoord. Zet op true (of verwijder) voor echte beveiliging.
+      - key: Auth__TweeFactorVerplichten
+        value: "false"
       # Observatie-uploads binnen de container (zie DEPLOY.md voor persistente opslag).
       - key: Bestandsopslag__Root
         value: /app/App_Data/bestanden

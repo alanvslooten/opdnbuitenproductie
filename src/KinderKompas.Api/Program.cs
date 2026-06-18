@@ -99,8 +99,13 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<KinderKompasDbContext>();
     await db.Database.MigrateAsync();
 
+    // 2FA-handhaving voor Beheerder/Groepsportaal. Standaard aan; zet
+    // 'Auth:TweeFactorVerplichten' op false om voor een demo met alleen
+    // gebruikersnaam + wachtwoord te kunnen inloggen (werkt ook op bestaande accounts).
+    bool tweeFactorVerplichten = app.Configuration.GetValue("Auth:TweeFactorVerplichten", true);
+
     var seeder = scope.ServiceProvider.GetRequiredService<IdentityDataSeeder>();
-    await seeder.SeedAsync(app.Environment.IsDevelopment());
+    await seeder.SeedAsync(app.Environment.IsDevelopment(), tweeFactorVerplichten);
 
     // Rijke demo-dataset over alle modules (idempotent). Standaard aan; zet
     // 'DemoData:Inschakelen' op false om met een lege organisatie te starten.

@@ -63,7 +63,7 @@ public sealed class IdentityDataSeeder
         new("groepsportaal", "portaal@opdnbuiten.nl", "Portaal!2026", Rol.Groepsportaal, true, null, null),
     };
 
-    public async Task SeedAsync(bool isDevelopment, CancellationToken ct = default)
+    public async Task SeedAsync(bool isDevelopment, bool tweeFactorVerplichten, CancellationToken ct = default)
     {
         await SeedRollenAsync();
 
@@ -72,8 +72,42 @@ public sealed class IdentityDataSeeder
             await SeedAccountAsync(account, isDevelopment, ct);
         }
 
+        await ReconcileTweeFactorAsync(tweeFactorVerplichten, ct);
         await SeedDemoKindAsync(ct);
         await BackfillRoosterbasisAsync(ct);
+    }
+
+    /// <summary>
+    /// Brengt de 2FA-status van de verplichte-2FA-accounts (Beheerder, Groepsportaal)
+    /// in lijn met de config <c>Auth:TweeFactorVerplichten</c>. Werkt óók op reeds
+    /// bestaande accounts in de database, zodat 2FA voor een demo uitgezet (of weer
+    /// aangezet) kan worden zonder de accounts opnieuw aan te maken. Idempotent.
+    /// </summary>
+    private async Task ReconcileTweeFactorAsync(bool verplichten, CancellationToken ct)
+    {
+        foreach (AccountSeed account in Accounts)
+        {
+            if (!account.TweeFactorVerplicht)
+            {
+                continue;
+            }
+
+            ApplicationUser? gebruiker = await _users.FindByNameAsync(account.Gebruikersnaam);
+            if (gebruiker is null || await _users.GetTwoFactorEnabledAsync(gebruiker) == verplichten)
+            {
+                continue;
+            }
+
+            // Bij (her)inschakelen: zorg dat er een authenticator-sleutel is.
+            if (verplichten && string.IsNullOrEmpty(await _users.GetAuthenticatorKeyAsync(gebruiker)))
+            {
+                await _users.ResetAuthenticatorKeyAsync(gebruiker);
+            }
+
+            await _users.SetTwoFactorEnabledAsync(gebruiker, verplichten);
+            _log.LogWarning("2FA voor '{Gebruiker}' staat nu {Status} (config Auth:TweeFactorVerplichten).",
+                account.Gebruikersnaam, verplichten ? "AAN" : "UIT");
+        }
     }
 
     /// <summary>
