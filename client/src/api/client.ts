@@ -11,6 +11,19 @@ interface Tokens {
 
 const OPSLAG_SLEUTEL = 'kk_tokens';
 
+// Basis-URL van de API. Leeg in dev (Vite proxyt /api naar de lokale API), in
+// productie de absolute API-URL: via build-time env var VITE_API_BASE_URL, met
+// de Render-API als terugval. Een static-site rewrite proxyt geen POST, dus
+// praat de frontend in productie rechtstreeks met de API (CORS staat dit toe).
+const API_BASIS = (
+  import.meta.env.VITE_API_BASE_URL ??
+  (import.meta.env.PROD ? 'https://kinderkompas-api.onrender.com' : '')
+).replace(/\/+$/, '');
+
+function apiUrl(pad: string): string {
+  return API_BASIS + pad;
+}
+
 function laad(): Tokens | null {
   const ruw = localStorage.getItem(OPSLAG_SLEUTEL);
   return ruw ? (JSON.parse(ruw) as Tokens) : null;
@@ -51,12 +64,12 @@ async function ruwVerzoek(pad: string, opties: RequestInit): Promise<Response> {
   if (opties.body && !headers.has('Content-Type') && !(opties.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
   }
-  return fetch(pad, { ...opties, headers });
+  return fetch(apiUrl(pad), { ...opties, headers });
 }
 
 async function probeerVernieuwen(): Promise<boolean> {
   if (!tokens) return false;
-  const res = await fetch('/api/auth/refresh', {
+  const res = await fetch(apiUrl('/api/auth/refresh'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ refreshToken: tokens.refreshToken }),

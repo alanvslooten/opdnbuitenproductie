@@ -34,6 +34,9 @@ services:
         value: KinderKompas
       - key: Jwt__Audience
         value: KinderKompas.Client
+      # Origin van de frontend; staat directe (CORS-)verzoeken vanaf de client toe.
+      - key: Cors__Origins
+        value: https://kinderkompas-client.onrender.com
       # Observatie-uploads binnen de container (zie DEPLOY.md voor persistente opslag).
       - key: Bestandsopslag__Root
         value: /app/App_Data/bestanden
@@ -45,12 +48,13 @@ services:
     rootDir: client
     buildCommand: npm install && npm run build
     staticPublishPath: dist
+    envVars:
+      # Absolute API-URL waarmee de frontend rechtstreeks praat. Een static-site
+      # rewrite proxyt geen POST (login), dus geen proxy maar directe calls + CORS.
+      - key: VITE_API_BASE_URL
+        value: https://kinderkompas-api.onrender.com
     routes:
-      # /api/* server-side doorsturen naar de API → geen CORS nodig.
-      - type: rewrite
-        source: /api/*
-        destination: https://kinderkompas-api.onrender.com/api/:splat
-      # SPA-fallback: alle overige paden naar index.html (client-side routing).
+      # SPA-fallback: alle paden naar index.html (client-side routing).
       - type: rewrite
         source: /*
         destination: /index.html

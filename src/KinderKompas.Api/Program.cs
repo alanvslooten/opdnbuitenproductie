@@ -30,6 +30,21 @@ builder.Services
     });
 builder.Services.AddOpenApi();
 
+// CORS: in productie draait de frontend op een ander origin (Render static site)
+// en praat rechtstreeks met deze API. Toegestane origins via 'Cors:Origins'
+// (komma-gescheiden), met de Render-client als terugval. Lokaal niet nodig
+// (Vite proxyt /api naar dezelfde origin).
+string[] toegestaneOrigins = (builder.Configuration["Cors:Origins"]
+        ?? "https://kinderkompas-client.onrender.com")
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy => policy
+        .WithOrigins(toegestaneOrigins)
+        .AllowAnyHeader()
+        .AllowAnyMethod());
+});
+
 // Infrastructure: EF Core + Identity + auth-services.
 builder.Services.AddInfrastructure(builder.Configuration);
 
@@ -99,6 +114,8 @@ if (app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
+
+app.UseCors();
 
 app.UseAuthentication();
 app.UseAuthorization();
