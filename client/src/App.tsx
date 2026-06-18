@@ -1,0 +1,81 @@
+import { Navigate, Route, Routes } from 'react-router-dom';
+import { useAuth } from './auth/AuthContext';
+import { Layout } from './components/Layout';
+import { LoginPage } from './pages/LoginPage';
+import { DashboardPage } from './pages/DashboardPage';
+import { MeldingenPage } from './pages/MeldingenPage';
+import { InstellingenPage } from './pages/InstellingenPage';
+import { WeekplanningPage } from './pages/WeekplanningPage';
+import { DagfilterPage } from './pages/DagfilterPage';
+import { KinderenPage } from './pages/KinderenPage';
+import { KindFormPage } from './pages/KindFormPage';
+import { StamgroepenPage } from './pages/StamgroepenPage';
+import { WachtlijstPage } from './pages/WachtlijstPage';
+import { WachtlijstFormPage } from './pages/WachtlijstFormPage';
+import { RoosterPage } from './pages/RoosterPage';
+import { MedewerkersPage } from './pages/MedewerkersPage';
+import { VerlofPage } from './pages/VerlofPage';
+import { ObservatiesPage } from './pages/ObservatiesPage';
+import { GroepsportaalPage } from './pages/GroepsportaalPage';
+import { ThuisportaalPage } from './pages/ThuisportaalPage';
+import { Capabilities } from './types';
+
+export default function App() {
+  const { ingelogd, klaar, heeft } = useAuth();
+
+  if (!klaar) {
+    return (
+      <div className="loader" style={{ minHeight: '100vh' }}>
+        <i className="ti ti-loader" /> Laden…
+      </div>
+    );
+  }
+
+  if (!ingelogd) {
+    return (
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
+
+  // Slimme startpagina: het dashboard voor de back-office, anders het groepsportaal
+  // (tablet) en daarna het thuis-portaal (medewerker). Zo landt elke rol op een
+  // pagina die hij mag zien.
+  const startpagina = heeft(Capabilities.DashboardZien)
+    ? '/dashboard'
+    : heeft(Capabilities.KinderenBeheren)
+      ? '/planning'
+      : heeft(Capabilities.GroepsportaalGebruiken)
+        ? '/groepsportaal'
+        : heeft(Capabilities.ThuisportaalGebruiken)
+          ? '/thuisportaal'
+          : '/thuisportaal';
+
+  return (
+    <Routes>
+      <Route element={<Layout />}>
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/meldingen" element={<MeldingenPage />} />
+        <Route path="/instellingen" element={<InstellingenPage />} />
+        <Route path="/planning" element={<WeekplanningPage />} />
+        <Route path="/dagfilter" element={<DagfilterPage />} />
+        <Route path="/kinderen" element={<KinderenPage />} />
+        <Route path="/kinderen/nieuw" element={<KindFormPage />} />
+        <Route path="/kinderen/:id" element={<KindFormPage />} />
+        <Route path="/observaties" element={<ObservatiesPage />} />
+        <Route path="/stamgroepen" element={<StamgroepenPage />} />
+        <Route path="/rooster" element={<RoosterPage />} />
+        <Route path="/medewerkers" element={<MedewerkersPage />} />
+        <Route path="/verlof" element={<VerlofPage />} />
+        <Route path="/wachtlijst" element={<WachtlijstPage />} />
+        <Route path="/wachtlijst/nieuw" element={<WachtlijstFormPage />} />
+        <Route path="/wachtlijst/:id" element={<WachtlijstFormPage />} />
+        <Route path="/groepsportaal" element={<GroepsportaalPage />} />
+        <Route path="/thuisportaal" element={<ThuisportaalPage />} />
+        <Route path="*" element={<Navigate to={startpagina} replace />} />
+      </Route>
+    </Routes>
+  );
+}

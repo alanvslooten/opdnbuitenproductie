@@ -1,0 +1,6 @@
+@KinderKompas.Api_HostAddress = http://localhost:5181
+
+GET {{KinderKompas.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

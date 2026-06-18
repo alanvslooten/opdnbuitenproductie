@@ -1,0 +1,56 @@
+# Render Blueprint — zet database, API en frontend in één keer op.
+# Aanmaken: Render Dashboard → New → Blueprint → wijs deze repo aan.
+# Let op: de rewrite-bestemming hieronder gebruikt de API-servicenaam
+# (kinderkompas-api). Krijgt je API een andere naam/URL, pas dan de
+# destination bij de static site aan.
+
+databases:
+  - name: kinderkompas-db
+    databaseName: kinderkompas
+    plan: free
+    postgresMajorVersion: "16"
+
+services:
+  # ── .NET API (Docker) ──
+  - type: web
+    name: kinderkompas-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      # Verbindingsstring komt rechtstreeks uit de Render-database.
+      - key: ConnectionStrings__KinderKompas
+        fromDatabase:
+          name: kinderkompas-db
+          property: connectionString
+      # JWT-ondertekensleutel: Render genereert een sterke waarde bij eerste deploy.
+      - key: Jwt__Key
+        generateValue: true
+      - key: Jwt__Issuer
+        value: KinderKompas
+      - key: Jwt__Audience
+        value: KinderKompas.Client
+      # Observatie-uploads binnen de container (zie DEPLOY.md voor persistente opslag).
+      - key: Bestandsopslag__Root
+        value: /app/App_Data/bestanden
+
+  # ── React-frontend (static site, gratis CDN) ──
+  - type: web
+    name: kinderkompas-client
+    runtime: static
+    rootDir: client
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      # /api/* server-side doorsturen naar de API → geen CORS nodig.
+      - type: rewrite
+        source: /api/*
+        destination: https://kinderkompas-api.onrender.com/api/:splat
+      # SPA-fallback: alle overige paden naar index.html (client-side routing).
+      - type: rewrite
+        source: /*
+        destination: /index.html

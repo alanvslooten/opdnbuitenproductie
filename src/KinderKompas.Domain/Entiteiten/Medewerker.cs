@@ -1,0 +1,54 @@
+using KinderKompas.Domain.Common;
+using KinderKompas.Domain.Enums;
+
+namespace KinderKompas.Domain.Entiteiten;
+
+/// <summary>
+/// Een medewerker van de organisatie. De koppeling met een Identity-account
+/// (login, 2FA) wordt in fase 3 ingevuld; tot die tijd blijft
+/// <see cref="IdentityUserId"/> leeg en bestaat de medewerker als pure
+/// stamgegevens-record voor planning en rooster.
+/// </summary>
+public class Medewerker : TenantEntiteit
+{
+    public required string Voornaam { get; set; }
+    public required string Achternaam { get; set; }
+
+    public Rol Rol { get; set; }
+
+    /// <summary>
+    /// Vaste werkdagen: de eerste roosterlaag. Deze dagen staan automatisch in
+    /// elke week ingepland, tenzij er goedgekeurd verlof of ziekte tegenover staat.
+    /// </summary>
+    public Weekdag VasteWerkdagen { get; set; }
+
+    /// <summary>
+    /// Beschikbaarheidsdagen: de tweede roosterlaag. Geen vaste inzet, maar wél
+    /// inzetbaar wanneer het auto-rooster extra bezetting nodig heeft (ziekte/uitval
+    /// of een BKR-tekort op een vaste dag).
+    /// </summary>
+    public Weekdag Beschikbaarheidsdagen { get; set; }
+
+    /// <summary>Contracturen per week.</summary>
+    public decimal Contracturen { get; set; }
+
+    /// <summary>
+    /// De vaste thuisgroep waarin deze medewerker standaard wordt ingepland.
+    /// Optioneel: een flex-/invalkracht hoeft geen vaste groep te hebben.
+    /// </summary>
+    public Guid? VasteStamgroepId { get; set; }
+    public Stamgroep? VasteStamgroep { get; set; }
+
+    /// <summary>FK naar de ASP.NET Core Identity-gebruiker. Null tot fase 3.</summary>
+    public string? IdentityUserId { get; set; }
+
+    public Organisatie? Organisatie { get; set; }
+
+    /// <summary>
+    /// Of deze medewerker op een weekdag standaard wordt ingepland (vaste werkdag).
+    /// </summary>
+    public bool WerktVastOp(Weekdag dag) => VasteWerkdagen.HasFlag(dag);
+
+    /// <summary>Of deze medewerker op een weekdag inzetbaar is bij uitval/tekort.</summary>
+    public bool IsBeschikbaarOp(Weekdag dag) => Beschikbaarheidsdagen.HasFlag(dag);
+}

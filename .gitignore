@@ -1,0 +1,22 @@
+# .NET build output
+bin/
+obj/
+# Rider/VS
+.idea/
+.vs/
+# User-specific
+*.user
+# Node (client)
+client/node_modules/
+client/dist/
+client/.vite/
+# Uploads (lokale bestandsopslag) + lokale databases
+App_Data/
+*.db
+*.db-shm
+*.db-wal
+# OS
+.DS_Store
+Thumbs.db
+# Claude Code lokale instellingen (machine-specifiek)
+.claude/settings.local.json

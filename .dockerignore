@@ -1,0 +1,15 @@
+# Build-output en lokale rommel buiten de Docker-context houden (sneller + kleiner).
+**/bin/
+**/obj/
+**/.vs/
+client/
+*.user
+*.db
+*.db-shm
+*.db-wal
+App_Data/
+.git/
+.github/
+**/node_modules/
+DEPLOY.md
+README*.md
