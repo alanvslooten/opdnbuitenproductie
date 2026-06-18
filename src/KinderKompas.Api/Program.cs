@@ -101,6 +101,23 @@ using (var scope = app.Services.CreateScope())
 
     var seeder = scope.ServiceProvider.GetRequiredService<IdentityDataSeeder>();
     await seeder.SeedAsync(app.Environment.IsDevelopment());
+
+    // Rijke demo-dataset over alle modules (idempotent). Standaard aan; zet
+    // 'DemoData:Inschakelen' op false om met een lege organisatie te starten.
+    // Bewust niet-fataal: een fout in de demo-data mag de API nooit platleggen.
+    if (app.Configuration.GetValue("DemoData:Inschakelen", true))
+    {
+        try
+        {
+            var demoSeeder = scope.ServiceProvider.GetRequiredService<DemoDataSeeder>();
+            await demoSeeder.SeedAsync();
+        }
+        catch (Exception ex)
+        {
+            var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+            logger.LogError(ex, "Demo-dataset seeden mislukt; de applicatie start zonder (volledige) demo-data.");
+        }
+    }
 }
 
 if (app.Environment.IsDevelopment())
