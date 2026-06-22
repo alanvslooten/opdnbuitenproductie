@@ -21,6 +21,15 @@ public static class Capabilities
     public const string MagOudergegevensZien = "MagOudergegevensZien";
 
     public const string MagKinderenBeheren = "MagKinderenBeheren";
+
+    /// <summary>
+    /// De weekplanning en het dagfilter ALLEEN-LEZEN inzien, los van
+    /// <see cref="MagKinderenBeheren"/> (dat ook kindgegevens en stamgroepen muteert).
+    /// Zo kan een rol als Senior wél de planning bekijken zonder kinderen/stamgroepen
+    /// te kunnen beheren.
+    /// </summary>
+    public const string MagPlanningZien = "MagPlanningZien";
+
     public const string MagWachtlijstBeheren = "MagWachtlijstBeheren";
     public const string MagRoosterBeheren = "MagRoosterBeheren";
     public const string MagRoosterVersturen = "MagRoosterVersturen";
@@ -59,6 +68,7 @@ public static class Capabilities
     {
         new CapabilityDefinitie(MagOudergegevensZien, "Oudergegevens (contact, telefoon, mail) inzien"),
         new CapabilityDefinitie(MagKinderenBeheren, "Kindgegevens en plaatsing beheren"),
+        new CapabilityDefinitie(MagPlanningZien, "Weekplanning en dagfilter inzien (alleen-lezen)"),
         new CapabilityDefinitie(MagWachtlijstBeheren, "Wachtlijst en plaatsingsvoorstellen beheren"),
         new CapabilityDefinitie(MagRoosterBeheren, "Werkrooster opstellen en wijzigen"),
         new CapabilityDefinitie(MagRoosterVersturen, "Werkrooster definitief versturen"),

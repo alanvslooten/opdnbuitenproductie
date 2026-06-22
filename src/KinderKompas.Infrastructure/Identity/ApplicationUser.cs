@@ -19,4 +19,11 @@ public class ApplicationUser : IdentityUser
 
     /// <summary>De gekoppelde medewerker, of null voor een gedeeld portaal-account.</summary>
     public Guid? MedewerkerId { get; set; }
+
+    /// <summary>
+    /// De stamgroep waaraan dit account vast hangt — gezet voor een Groepsportaal-account
+    /// (één tablet per groep, bv. Bengeltjes of Boefjes), zodat alle groepsportaal-data
+    /// tot die groep beperkt blijft. Null voor persoonlijke/back-office accounts.
+    /// </summary>
+    public Guid? StamgroepId { get; set; }
 }

@@ -45,6 +45,8 @@ export interface KindObservatieschemaDto {
   aantalBinnenkort: number;
   aantalAfgerond: number;
   momenten: ObservatiemomentDto[];
+  /** Of de huidige gebruiker dit kind mag bewerken (false = read-only, bv. andere groep in het portaal). */
+  bewerkbaar: boolean;
 }
 
 // --- Queries ---

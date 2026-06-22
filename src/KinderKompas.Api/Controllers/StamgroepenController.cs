@@ -1,34 +1,49 @@
 using FluentValidation;
+using KinderKompas.Api.Auth;
 using KinderKompas.Api.Validatie;
+using KinderKompas.Application.Abstractions;
 using KinderKompas.Application.Stamgroepen;
 using KinderKompas.Domain.Autorisatie;
 using KinderKompas.Domain.Entiteiten;
+using KinderKompas.Infrastructure.Identity;
 using KinderKompas.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace KinderKompas.Api.Controllers;
 
 /// <summary>
-/// Beheer van stamgroepen (CRUD). Afgeschermd met <see cref="Capabilities.MagKinderenBeheren"/>.
-/// Alle queries lopen via de tenant-gefilterde DbContext, dus enkel de eigen organisatie.
+/// Beheer van stamgroepen (CRUD). LEZEN mag iedereen die planning/observaties/kinderen
+/// gebruikt (<see cref="AutorisatieBeleid.StamgroepenLezen"/>); MUTEREN vereist
+/// <see cref="Capabilities.MagKinderenBeheren"/>. Alle queries lopen via de
+/// tenant-gefilterde DbContext, dus enkel de eigen organisatie.
 /// </summary>
 [ApiController]
 [Route("api/stamgroepen")]
-[Authorize(Policy = Capabilities.MagKinderenBeheren)]
+[Authorize]
 public sealed class StamgroepenController : ControllerBase
 {
     private readonly KinderKompasDbContext _db;
     private readonly IValidator<StamgroepInvoer> _validator;
+    private readonly UserManager<ApplicationUser> _users;
+    private readonly ICurrentUser _huidigeGebruiker;
 
-    public StamgroepenController(KinderKompasDbContext db, IValidator<StamgroepInvoer> validator)
+    public StamgroepenController(
+        KinderKompasDbContext db,
+        IValidator<StamgroepInvoer> validator,
+        UserManager<ApplicationUser> users,
+        ICurrentUser huidigeGebruiker)
     {
         _db = db;
         _validator = validator;
+        _users = users;
+        _huidigeGebruiker = huidigeGebruiker;
     }
 
     [HttpGet]
+    [Authorize(Policy = AutorisatieBeleid.StamgroepenLezen)]
     public async Task<ActionResult<IReadOnlyList<StamgroepDto>>> Lijst(CancellationToken ct)
     {
         var groepen = await _db.Stamgroepen
@@ -41,6 +56,7 @@ public sealed class StamgroepenController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [Authorize(Policy = AutorisatieBeleid.StamgroepenLezen)]
     public async Task<ActionResult<StamgroepDto>> Detail(Guid id, CancellationToken ct)
     {
         var groep = await _db.Stamgroepen
@@ -53,6 +69,7 @@ public sealed class StamgroepenController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = Capabilities.MagKinderenBeheren)]
     public async Task<ActionResult<StamgroepDto>> Aanmaken(StamgroepInvoer invoer, CancellationToken ct)
     {
         if (await _validator.ValideerAsync(invoer, this, ct) is { } fout)
@@ -69,6 +86,7 @@ public sealed class StamgroepenController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Policy = Capabilities.MagKinderenBeheren)]
     public async Task<ActionResult<StamgroepDto>> Bewerken(Guid id, StamgroepInvoer invoer, CancellationToken ct)
     {
         if (await _validator.ValideerAsync(invoer, this, ct) is { } fout)
@@ -100,8 +118,15 @@ public sealed class StamgroepenController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> Verwijderen(Guid id, CancellationToken ct)
+    [Authorize(Policy = Capabilities.MagKinderenBeheren)]
+    public async Task<IActionResult> Verwijderen(Guid id, [FromBody] StamgroepVerwijderInvoer? invoer, CancellationToken ct)
     {
+        // Kritieke data: bevestig met het wachtwoord van de ingelogde beheerder.
+        if (await VerifieerWachtwoordAsync(invoer?.Wachtwoord) is { } wachtwoordFout)
+        {
+            return wachtwoordFout;
+        }
+
         Stamgroep? groep = await _db.Stamgroepen.FirstOrDefaultAsync(s => s.Id == id, ct);
         if (groep is null)
         {
@@ -122,4 +147,38 @@ public sealed class StamgroepenController : ControllerBase
         await _db.SaveChangesAsync(ct);
         return NoContent();
     }
+
+    /// <summary>
+    /// Controleert het wachtwoord van de ingelogde gebruiker. Geeft een
+    /// <see cref="ActionResult"/> met probleemdetails terug als het ontbreekt of
+    /// onjuist is; anders null (in orde).
+    /// </summary>
+    private async Task<ActionResult?> VerifieerWachtwoordAsync(string? wachtwoord)
+    {
+        if (string.IsNullOrEmpty(wachtwoord))
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Bevestiging vereist",
+                Detail = "Voer je wachtwoord in om deze actie te bevestigen.",
+            });
+        }
+
+        ApplicationUser? gebruiker = _huidigeGebruiker.UserId is { } uid
+            ? await _users.FindByIdAsync(uid)
+            : null;
+        if (gebruiker is null || !await _users.CheckPasswordAsync(gebruiker, wachtwoord))
+        {
+            return Conflict(new ProblemDetails
+            {
+                Title = "Wachtwoord onjuist",
+                Detail = "Het ingevoerde wachtwoord klopt niet.",
+            });
+        }
+
+        return null;
+    }
 }
+
+/// <summary>Bevestiging voor het verwijderen van een stamgroep: het beheerderswachtwoord.</summary>
+public sealed record StamgroepVerwijderInvoer(string Wachtwoord);

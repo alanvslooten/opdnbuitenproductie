@@ -22,7 +22,7 @@ public class OudergegevensProjectieTests
         Geboortedatum = new DateOnly(2023, 4, 1),
         StamgroepId = Guid.NewGuid(),
         Startdatum = new DateOnly(2023, 7, 1),
-        Oudercontact = new Oudercontact("Mark de Vries", "0612345678", "mark@example.nl"),
+        Oudercontacten = { new Oudercontact("Mark de Vries", "0612345678", "mark@example.nl") },
     };
 
     [Fact]
@@ -33,7 +33,7 @@ public class OudergegevensProjectieTests
 
         KindDto dto = KindMapper.NaarDto(kind, thuis, Peildatum);
 
-        Assert.Null(dto.Oudercontact);
+        Assert.Empty(dto.Oudercontacten);
         // De overige (niet-privacygevoelige) gegevens komen wél mee.
         Assert.Equal("Fenna", dto.Voornaam);
     }
@@ -46,22 +46,22 @@ public class OudergegevensProjectieTests
 
         KindDto dto = KindMapper.NaarDto(kind, portaal, Peildatum);
 
-        Assert.NotNull(dto.Oudercontact);
-        Assert.Equal("Mark de Vries", dto.Oudercontact!.Naam);
-        Assert.Equal("0612345678", dto.Oudercontact.Telefoon);
-        Assert.Equal("mark@example.nl", dto.Oudercontact.Email);
+        OudercontactDto contact = Assert.Single(dto.Oudercontacten);
+        Assert.Equal("Mark de Vries", contact.Naam);
+        Assert.Equal("0612345678", contact.Telefoon);
+        Assert.Equal("mark@example.nl", contact.Email);
     }
 
     [Fact]
-    public void ZonderOudercontact_BlijftNull_OokMetCapability()
+    public void ZonderOudercontact_BlijftLeeg_OokMetCapability()
     {
         Kind kind = MaakKindMetOuder();
-        kind.Oudercontact = null;
+        kind.Oudercontacten.Clear();
         var portaal = new FakeCurrentUser(Capabilities.MagOudergegevensZien);
 
         KindDto dto = KindMapper.NaarDto(kind, portaal, Peildatum);
 
-        Assert.Null(dto.Oudercontact);
+        Assert.Empty(dto.Oudercontacten);
     }
 
     /// <summary>Test-dubbel voor de ingelogde gebruiker met een vaste set capabilities.</summary>
@@ -78,6 +78,7 @@ public class OudergegevensProjectieTests
         public string? UserId => "test-user";
         public Guid? OrganisatieId => Guid.Parse("0a000000-0000-0000-0000-000000000001");
         public Guid? MedewerkerId => null;
+        public Guid? StamgroepId => null;
         public IReadOnlySet<string> Capabilities => _capabilities;
         public bool Heeft(string capability) => _capabilities.Contains(capability);
     }

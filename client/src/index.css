@@ -70,8 +70,9 @@
   --border:    rgba(148,163,184,.12);
   --border2:   rgba(148,163,184,.22);
   --text:      #F1F5F9;
-  --text2:     #94A3B8;
-  --text3:     #64748B;
+  /* Lichtere secundaire/muted tinten voor leesbaar contrast op donker (Erik-feedback). */
+  --text2:     #CBD5E1;
+  --text3:     #94A3B8;
   --shadow:    0 1px 3px rgba(0,0,0,.2);
   --shadow-md: 0 4px 16px rgba(0,0,0,.3);
   --shadow-lg: 0 12px 40px rgba(0,0,0,.45);
@@ -338,6 +339,18 @@ html{font-size:clamp(13px,1.1vw,15px)}
 .alert-info{background:var(--blue-l);color:var(--blue-d);border-color:rgba(37,99,235,.15)}
 .alert-ok{background:var(--green-l);color:var(--green);border-color:rgba(5,150,105,.18)}
 .alert-bad{background:var(--rose-l);color:var(--rose);border-color:rgba(225,29,72,.18)}
+
+/* ══════════════════════════════════
+   BKR CALCULATOR
+══════════════════════════════════ */
+.bkr-inputs{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0}
+@media(max-width:639px){.bkr-inputs{grid-template-columns:1fr 1fr}}
+.bkr-ig label{display:block;font-size:9px;font-weight:700;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px}
+.bkr-ig input{width:100%;padding:9px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:22px;font-weight:700;color:var(--text);text-align:center;outline:none;transition:.15s;letter-spacing:-.5px}
+.bkr-ig input:focus{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-m);background:var(--surface)}
+.bkr-ig .bkr-hint{font-size:9px;color:var(--text3);text-align:center;margin-top:2px}
+.bkr-result{background:var(--surface2);border-radius:var(--r);padding:14px 18px;border:1px solid var(--border);display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.bkr-big{font-size:46px;font-weight:700;color:var(--blue);line-height:1;letter-spacing:-1px}
 
 /* ══════════════════════════════════
    FILTERS & SEARCH

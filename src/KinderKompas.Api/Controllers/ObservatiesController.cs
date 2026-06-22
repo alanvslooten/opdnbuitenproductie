@@ -60,6 +60,16 @@ public sealed class ObservatiesController : ControllerBase
         _huidigeGebruiker.Heeft(Capabilities.MagMedewerkersBeheren) ||
         _huidigeGebruiker.Heeft(Capabilities.MagGroepsportaalGebruiken);
 
+    /// <summary>
+    /// De stamgroep waartoe een Groepsportaal-account beperkt is voor BEWERKEN. Een
+    /// portaal ziet alle groepen, maar mag alleen de eigen groep afvinken/versturen/
+    /// ongedaan maken (feedback Erik V2). Null = geen portaal-beperking (beheerder/mentor).
+    /// </summary>
+    private Guid? PortaalBewerkGroep =>
+        _huidigeGebruiker.Heeft(Capabilities.MagGroepsportaalGebruiken)
+            ? _huidigeGebruiker.StamgroepId
+            : null;
+
     /// <summary>De kinderen die de huidige gebruiker mag inzien (mentor-scope).</summary>
     private IQueryable<Kind> ZichtbareKinderen()
     {
@@ -107,9 +117,11 @@ public sealed class ObservatiesController : ControllerBase
 
         int drempel = (await _instellingen.HuidigeAsync(ct)).ObservatieBinnenkortDrempelDagen;
 
+        Guid? bewerkGroep = PortaalBewerkGroep;
         IReadOnlyList<KindObservatieschemaDto> resultaat = kinderen
             .Select(k => ObservatieOverzichtBouwer.Bouw(
-                k, perKind.GetValueOrDefault(k.Id) ?? [], peil, drempel))
+                    k, perKind.GetValueOrDefault(k.Id) ?? [], peil, drempel)
+                with { Bewerkbaar = bewerkGroep is null || k.StamgroepId == bewerkGroep })
             .ToList();
 
         return Ok(resultaat);
@@ -140,7 +152,7 @@ public sealed class ObservatiesController : ControllerBase
     public async Task<ActionResult<ObservatieDto>> Afvinken(
         Guid kindId, [FromForm] int mijlpaalMaanden, IFormFile? bestand, CancellationToken ct)
     {
-        if (!await MagKindZien(kindId, ct))
+        if (!await MagKindBewerken(kindId, ct))
         {
             return NotFound();
         }
@@ -191,13 +203,13 @@ public sealed class ObservatiesController : ControllerBase
     public async Task<ActionResult<ObservatieDto>> Versturen(Guid observatieId, CancellationToken ct)
     {
         Observatie? observatie = await _db.Observaties.FirstOrDefaultAsync(o => o.Id == observatieId, ct);
-        if (observatie is null || !await MagKindZien(observatie.KindId, ct))
+        if (observatie is null || !await MagKindBewerken(observatie.KindId, ct))
         {
             return NotFound();
         }
 
         Kind? kind = await _db.Kinderen.AsNoTracking().FirstOrDefaultAsync(k => k.Id == observatie.KindId, ct);
-        string? email = kind?.Oudercontact?.Email;
+        string? email = kind?.Oudercontacten.FirstOrDefault()?.Email;
         if (kind is null || string.IsNullOrWhiteSpace(email))
         {
             return UnprocessableEntity(Probleem("Geen ouder-e-mailadres",
@@ -236,7 +248,7 @@ public sealed class ObservatiesController : ControllerBase
     public async Task<IActionResult> OngedaanMaken(Guid observatieId, CancellationToken ct)
     {
         Observatie? observatie = await _db.Observaties.FirstOrDefaultAsync(o => o.Id == observatieId, ct);
-        if (observatie is null || !await MagKindZien(observatie.KindId, ct))
+        if (observatie is null || !await MagKindBewerken(observatie.KindId, ct))
         {
             return NotFound();
         }
@@ -275,6 +287,24 @@ public sealed class ObservatiesController : ControllerBase
 
     private async Task<bool> MagKindZien(Guid kindId, CancellationToken ct) =>
         await ZichtbareKinderen().AnyAsync(k => k.Id == kindId, ct);
+
+    /// <summary>
+    /// Of het kind BEWERKT mag worden (afvinken/versturen/ongedaan). Naast de
+    /// zichtbaarheid geldt voor een Groepsportaal-account de groepsbeperking: alleen
+    /// de eigen groep is bewerkbaar, andere groepen zijn read-only.
+    /// </summary>
+    private async Task<bool> MagKindBewerken(Guid kindId, CancellationToken ct)
+    {
+        if (!await MagKindZien(kindId, ct))
+        {
+            return false;
+        }
+        if (PortaalBewerkGroep is not { } gid)
+        {
+            return true;
+        }
+        return await _db.Kinderen.AsNoTracking().AnyAsync(k => k.Id == kindId && k.StamgroepId == gid, ct);
+    }
 
     private ActionResult? ValideerBestand(IFormFile? bestand)
     {

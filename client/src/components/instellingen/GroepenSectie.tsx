@@ -29,7 +29,10 @@ function GroepRij({ groep }: { groep: StamgroepDto }) {
           </button>
           <button
             onClick={() => {
-              if (confirm(`Groep "${groep.naam}" verwijderen?`)) verwijderen.mutate(groep.id);
+              const wachtwoord = prompt(
+                `Groep "${groep.naam}" definitief verwijderen? Voer je wachtwoord in ter bevestiging:`,
+              );
+              if (wachtwoord) verwijderen.mutate({ id: groep.id, wachtwoord });
             }}
             className="btn btn-rose btn-xs"
           >

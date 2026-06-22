@@ -23,6 +23,12 @@ public interface ICurrentUser
     /// </summary>
     Guid? MedewerkerId { get; }
 
+    /// <summary>
+    /// De stamgroep waaraan een Groepsportaal-account vast hangt, of null voor een
+    /// persoonlijk/back-office account. Scopt alle groepsportaal-data tot die groep.
+    /// </summary>
+    Guid? StamgroepId { get; }
+
     /// <summary>De capabilities (rechten) die in de token zijn opgenomen.</summary>
     IReadOnlySet<string> Capabilities { get; }
 

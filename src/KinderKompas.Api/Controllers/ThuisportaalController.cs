@@ -289,5 +289,31 @@ public sealed class ThuisportaalController : ControllerBase
         return Ok(resultaat);
     }
 
+    /// <summary>
+    /// Eigen urenoverzicht over een periode (default: deze maand): gewerkte uren,
+    /// verwachte uren volgens contract, saldo meer-/minderuren en de weeksubtotalen.
+    /// </summary>
+    [HttpGet("urenoverzicht")]
+    public async Task<ActionResult<UrenoverzichtDto>> Urenoverzicht(
+        [FromQuery] DateOnly? van, [FromQuery] DateOnly? tot, CancellationToken ct)
+    {
+        if (_huidigeGebruiker.MedewerkerId is not { } medewerkerId)
+        {
+            return Forbid();
+        }
+
+        DateOnly vanaf = van ?? new DateOnly(Vandaag.Year, Vandaag.Month, 1);
+        DateOnly totEnMet = tot ?? Vandaag;
+
+        Medewerker? medewerker = await _db.Medewerkers.AsNoTracking()
+            .FirstOrDefaultAsync(m => m.Id == medewerkerId, ct);
+
+        List<Urenregistratie> registraties = await _db.Urenregistraties.AsNoTracking()
+            .Where(u => u.MedewerkerId == medewerkerId && u.Datum >= vanaf && u.Datum <= totEnMet)
+            .ToListAsync(ct);
+
+        return Ok(UrenoverzichtBouwer.Bouw(registraties, medewerker?.Contracturen ?? 0m, vanaf, totEnMet));
+    }
+
     private static string Naam(Medewerker? m) => m is null ? "" : $"{m.Voornaam} {m.Achternaam}";
 }

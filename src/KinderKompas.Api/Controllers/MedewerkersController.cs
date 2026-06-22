@@ -1,6 +1,7 @@
 using FluentValidation;
 using KinderKompas.Api.Validatie;
 using KinderKompas.Application.Medewerkers;
+using KinderKompas.Application.Portaal;
 using KinderKompas.Domain.Autorisatie;
 using KinderKompas.Domain.Entiteiten;
 using KinderKompas.Infrastructure.Persistence;
@@ -66,16 +67,8 @@ public sealed class MedewerkersController : ControllerBase
             return stamgroepFout;
         }
 
-        var medewerker = new Medewerker
-        {
-            Voornaam = invoer.Voornaam,
-            Achternaam = invoer.Achternaam,
-            Rol = invoer.Rol,
-            VasteWerkdagen = invoer.VasteWerkdagen,
-            Beschikbaarheidsdagen = invoer.Beschikbaarheidsdagen,
-            Contracturen = invoer.Contracturen,
-            VasteStamgroepId = invoer.VasteStamgroepId,
-        };
+        var medewerker = new Medewerker { Voornaam = invoer.Voornaam, Achternaam = invoer.Achternaam };
+        MedewerkerMapper.PasInvoerToe(medewerker, invoer);
         _db.Medewerkers.Add(medewerker);
         await _db.SaveChangesAsync(ct);
 
@@ -104,17 +97,74 @@ public sealed class MedewerkersController : ControllerBase
             return NotFound();
         }
 
-        medewerker.Voornaam = invoer.Voornaam;
-        medewerker.Achternaam = invoer.Achternaam;
-        medewerker.Rol = invoer.Rol;
-        medewerker.VasteWerkdagen = invoer.VasteWerkdagen;
-        medewerker.Beschikbaarheidsdagen = invoer.Beschikbaarheidsdagen;
-        medewerker.Contracturen = invoer.Contracturen;
-        medewerker.VasteStamgroepId = invoer.VasteStamgroepId;
+        MedewerkerMapper.PasInvoerToe(medewerker, invoer);
         await _db.SaveChangesAsync(ct);
 
         await _db.Entry(medewerker).Reference(m => m.VasteStamgroep).LoadAsync(ct);
         return Ok(MedewerkerMapper.NaarDto(medewerker));
+    }
+
+    /// <summary>
+    /// Urenoverzicht van een medewerker over een periode (default: deze maand): gewerkte
+    /// (geklokte) uren, verwachte uren op basis van het contract en het saldo
+    /// meer-/minderuren, met een uitsplitsing per week. Voedt het medewerkerdossier (F-22).
+    /// </summary>
+    [HttpGet("{id:guid}/uren")]
+    public async Task<ActionResult<UrenoverzichtDto>> Uren(
+        Guid id, [FromQuery] DateOnly? van, [FromQuery] DateOnly? tot, CancellationToken ct)
+    {
+        Medewerker? medewerker = await _db.Medewerkers.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id, ct);
+        if (medewerker is null)
+        {
+            return NotFound();
+        }
+
+        DateOnly vandaag = DateOnly.FromDateTime(DateTime.UtcNow);
+        DateOnly vanaf = van ?? new DateOnly(vandaag.Year, vandaag.Month, 1);
+        DateOnly totEnMet = tot ?? vandaag;
+
+        List<Urenregistratie> registraties = await _db.Urenregistraties.AsNoTracking()
+            .Where(u => u.MedewerkerId == id && u.Datum >= vanaf && u.Datum <= totEnMet)
+            .ToListAsync(ct);
+
+        return Ok(UrenoverzichtBouwer.Bouw(registraties, medewerker.Contracturen, vanaf, totEnMet));
+    }
+
+    /// <summary>
+    /// Een urenregistratie corrigeren (beheerder): de in-/uitkloktijden achteraf zetten —
+    /// ook voor een eerdere dag. Legt vast wie en wanneer corrigeerde (audit).
+    /// </summary>
+    [HttpPut("uren/{registratieId:guid}/corrigeer")]
+    public async Task<ActionResult<UrenregistratieDto>> CorrigeerUren(
+        Guid registratieId, UrencorrectieInvoer invoer, CancellationToken ct)
+    {
+        Urenregistratie? reg = await _db.Urenregistraties
+            .Include(u => u.Medewerker).Include(u => u.Stamgroep)
+            .FirstOrDefaultAsync(u => u.Id == registratieId, ct);
+        if (reg is null)
+        {
+            return NotFound();
+        }
+
+        DateTime ingeklokt = invoer.Ingeklokt.ToUniversalTime();
+        DateTime? uitgeklokt = invoer.Uitgeklokt?.ToUniversalTime();
+        if (uitgeklokt is { } uit && uit <= ingeklokt)
+        {
+            return UnprocessableEntity(new ProblemDetails
+            {
+                Title = "Ongeldige tijden",
+                Detail = "De uitkloktijd moet ná de inkloktijd liggen.",
+            });
+        }
+
+        reg.Ingeklokt = ingeklokt;
+        reg.Uitgeklokt = uitgeklokt;
+        reg.GecorrigeerdOp = DateTime.UtcNow;
+        reg.GecorrigeerdDoorUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        await _db.SaveChangesAsync(ct);
+
+        string naam = reg.Medewerker is null ? "" : $"{reg.Medewerker.Voornaam} {reg.Medewerker.Achternaam}";
+        return Ok(UrenregistratieMapper.NaarDto(reg, naam, reg.Stamgroep?.Naam));
     }
 
     [HttpDelete("{id:guid}")]

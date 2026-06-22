@@ -70,6 +70,8 @@ public sealed class AuthController : ControllerBase
         gebruikersnaam = User.Identity?.Name,
         organisatieId = User.FindFirst(KinderKompasClaims.OrganisatieId)?.Value,
         rollen = User.FindAll(ClaimTypes.Role).Select(c => c.Value),
+        stamgroepNaam = User.FindFirst(KinderKompasClaims.StamgroepNaam)?.Value,
+        weergavenaam = User.FindFirst(KinderKompasClaims.Weergavenaam)?.Value,
         capabilities = User.FindAll(KinderKompasClaims.Capability).Select(c => c.Value),
     });
 

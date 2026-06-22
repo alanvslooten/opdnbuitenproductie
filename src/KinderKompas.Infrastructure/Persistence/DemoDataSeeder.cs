@@ -62,6 +62,7 @@ public sealed class DemoDataSeeder
         await SeedObservatiesAsync(vandaag, ct);
         await SeedUrenAsync(mw, vandaag, ct);
         await SeedMeldingenAsync(ct);
+        await SeedContactenAsync(vandaag, ct);
 
         _log.LogInformation("Demo-dataset geseed (idempotent).");
     }
@@ -84,9 +85,12 @@ public sealed class DemoDataSeeder
             ("esra", "Esra", "Yilmaz", Rol.Senior, Di | Wo | Do, Ma | Vr, 28m, Boefjes),
         };
 
+        DateOnly vandaag = DateOnly.FromDateTime(DateTime.UtcNow);
         var resultaat = new Dictionary<string, Medewerker>();
+        int i = 0;
         foreach (var d in definities)
         {
+            i++;
             Medewerker? m = await _db.Medewerkers.IgnoreQueryFilters()
                 .FirstOrDefaultAsync(x => x.Voornaam == d.Vn && x.Achternaam == d.An, ct);
             if (m is null)
@@ -103,6 +107,22 @@ public sealed class DemoDataSeeder
                     VasteStamgroepId = d.Groep,
                 };
                 _db.Medewerkers.Add(m);
+                await _db.SaveChangesAsync(ct);
+            }
+
+            // Backfill van de F-22-velden (contact, contract, pincode) — idempotent:
+            // alleen wanneer er nog geen pincode staat.
+            if (string.IsNullOrEmpty(m.Pincode))
+            {
+                bool vast = d.Rol is Rol.Beheerder or Rol.Hulpbeheerder or Rol.Senior;
+                m.Telefoon = $"06{10_000_000 + i:00000000}";
+                m.Email = $"{d.Vn.ToLowerInvariant()}@opdnbuiten.nl";
+                m.NoodcontactNaam = $"Noodcontact {d.Vn}";
+                m.NoodcontactTelefoon = $"06{90_000_000 + i:00000000}";
+                m.ContractVast = vast;
+                m.Contractbegindatum = vandaag.AddMonths(-12 - i);
+                m.Contracteinddatum = vast ? null : vandaag.AddMonths(6 + i);
+                m.Pincode = (1000 + i * 111).ToString();
                 await _db.SaveChangesAsync(ct);
             }
             resultaat[d.Sleutel] = m;
@@ -151,7 +171,7 @@ public sealed class DemoDataSeeder
                 GewensteOpvangdagen = k.Dagen,
                 StamgroepId = k.Groep,
                 MentorId = k.Mentor,
-                Oudercontact = new Oudercontact(k.Ouder, k.Tel, k.Mail),
+                Oudercontacten = { new Oudercontact(k.Ouder, k.Tel, k.Mail) },
             });
             ietsToegevoegd = true;
         }
@@ -470,7 +490,7 @@ public sealed class DemoDataSeeder
             ContentType = "application/pdf",
             BestandsGrootte = pdf.Length,
             VerzondenOp = isVerzonden ? DateTime.UtcNow.AddDays(-maanden) : null,
-            VerzondenNaarEmail = isVerzonden ? kind.Oudercontact?.Email : null,
+            VerzondenNaarEmail = isVerzonden ? kind.Oudercontacten.FirstOrDefault()?.Email : null,
         });
     }
 
@@ -597,5 +617,89 @@ public sealed class DemoDataSeeder
           .Append(xref).Append("\n%%EOF");
 
         return Encoding.ASCII.GetBytes(sb.ToString());
+    }
+
+    // ── Contacten (CRM) ──────────────────────────────────────────────────────
+    private async Task SeedContactenAsync(DateOnly vandaag, CancellationToken ct)
+    {
+        if (await _db.Contacten.IgnoreQueryFilters().AnyAsync(ct))
+        {
+            return;
+        }
+
+        // 1) Per wachtlijst-inschrijving met oudercontact een contact afleiden + koppelen,
+        //    met een rondleiding in de historie.
+        List<WachtlijstInschrijving> inschrijvingen = await _db.Wachtlijstinschrijvingen
+            .IgnoreQueryFilters()
+            .Where(w => w.Oudercontact != null)
+            .ToListAsync(ct);
+        foreach (WachtlijstInschrijving insch in inschrijvingen)
+        {
+            Oudercontact oc = insch.Oudercontact!;
+            (string vn, string an) = SplitNaam(oc.Naam);
+            var contact = new Contact
+            {
+                OrganisatieId = OrgId,
+                Voornaam = vn,
+                Achternaam = an,
+                Telefoon = oc.Telefoon,
+                Email = oc.Email,
+                IsIntern = insch.IsIntern,
+                Aantekeningen = insch.IsIntern ? "Bestaand gezin bij de opvang." : null,
+            };
+            _db.Contacten.Add(contact);
+            insch.Contact = contact;
+            _db.Rondleidingen.Add(new Rondleiding
+            {
+                OrganisatieId = OrgId,
+                Contact = contact,
+                Datum = insch.InschrijfdatumWachtlijst.AddDays(7),
+                Status = RondleidingStatus.Gehad,
+                Notitie = "Rondleiding gehad bij aanmelding.",
+            });
+        }
+
+        // 2) Een paar geplaatste kinderen aan een contact koppelen, zodat de
+        //    contacthistorie ook "geplaatste kinderen" toont.
+        List<Kind> kinderen = await _db.Kinderen.IgnoreQueryFilters()
+            .Where(k => k.ContactId == null)
+            .OrderBy(k => k.Achternaam)
+            .Take(3)
+            .ToListAsync(ct);
+        foreach (Kind kind in kinderen)
+        {
+            Oudercontact? oc = kind.Oudercontacten.FirstOrDefault();
+            (string vn, string an) = oc is not null ? SplitNaam(oc.Naam) : ("Ouder van", kind.Voornaam);
+            var contact = new Contact
+            {
+                OrganisatieId = OrgId,
+                Voornaam = vn,
+                Achternaam = an,
+                Telefoon = oc?.Telefoon,
+                Email = oc?.Email,
+                IsIntern = true,
+                Aantekeningen = $"Ouder/verzorger van {kind.Voornaam}.",
+            };
+            _db.Contacten.Add(contact);
+            kind.Contact = contact;
+            _db.Rondleidingen.Add(new Rondleiding
+            {
+                OrganisatieId = OrgId,
+                Contact = contact,
+                Datum = vandaag.AddMonths(-6),
+                Status = RondleidingStatus.Gehad,
+                Notitie = "Rondleiding gehad vóór plaatsing.",
+            });
+        }
+
+        await _db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>Splitst een volledige naam in voor- en achternaam (alles na de eerste spatie = achternaam).</summary>
+    private static (string Voornaam, string Achternaam) SplitNaam(string volledig)
+    {
+        string naam = volledig.Trim();
+        int spatie = naam.IndexOf(' ');
+        return spatie < 0 ? (naam, "—") : (naam[..spatie], naam[(spatie + 1)..]);
     }
 }

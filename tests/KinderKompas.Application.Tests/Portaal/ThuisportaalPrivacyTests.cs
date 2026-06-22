@@ -26,7 +26,7 @@ public class ThuisportaalPrivacyTests
         Geboortedatum = new DateOnly(2023, 4, 1),
         StamgroepId = Guid.NewGuid(),
         Startdatum = new DateOnly(2023, 7, 1),
-        Oudercontact = new Oudercontact("Mark de Vries", "0612345678", "mark@example.nl"),
+        Oudercontacten = { new Oudercontact("Mark de Vries", "0612345678", "mark@example.nl") },
     };
 
     [Fact]
@@ -38,7 +38,7 @@ public class ThuisportaalPrivacyTests
 
         KindDto dto = KindMapper.NaarDto(kind, thuis, Peildatum);
 
-        Assert.Null(dto.Oudercontact);
+        Assert.Empty(dto.Oudercontacten);
     }
 
     [Fact]
@@ -51,8 +51,8 @@ public class ThuisportaalPrivacyTests
 
         KindDto dto = KindMapper.NaarDto(kind, portaal, Peildatum);
 
-        Assert.NotNull(dto.Oudercontact);
-        Assert.Equal("Mark de Vries", dto.Oudercontact!.Naam);
+        Assert.NotEmpty(dto.Oudercontacten);
+        Assert.Equal("Mark de Vries", dto.Oudercontacten[0].Naam);
     }
 
     [Fact]
@@ -93,6 +93,7 @@ public class ThuisportaalPrivacyTests
         public string? UserId => "test-user";
         public Guid? OrganisatieId => Guid.Parse("0a000000-0000-0000-0000-000000000001");
         public Guid? MedewerkerId => Guid.Parse("0b000000-0000-0000-0000-000000000002");
+        public Guid? StamgroepId => null;
         public IReadOnlySet<string> Capabilities => _capabilities;
         public bool Heeft(string capability) => _capabilities.Contains(capability);
     }

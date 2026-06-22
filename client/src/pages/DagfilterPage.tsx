@@ -39,8 +39,19 @@ export function DagfilterPage() {
       </div>
 
       <p style={{ marginBottom: 12, fontSize: 12, color: 'var(--text2)' }}>
-        {korteDatum(datum)} — <strong>{data?.length ?? 0}</strong> kind(eren) aanwezig.
+        {korteDatum(datum)} — <strong>{data?.kinderen.length ?? 0}</strong> kind(eren) ·{' '}
+        <strong>{data?.begeleiders.length ?? 0}</strong> begeleider(s) aanwezig.
       </p>
+
+      {data && data.begeleiders.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+          {data.begeleiders.map((b) => (
+            <span key={b.medewerkerId} className="badge b-violet" title={b.taakomschrijving ?? undefined}>
+              <i className="ti ti-user" /> {b.naam}
+            </span>
+          ))}
+        </div>
+      )}
 
       {isLoading && (
         <div className="loader">
@@ -60,7 +71,7 @@ export function DagfilterPage() {
             </tr>
           </thead>
           <tbody>
-            {data?.map((k) => (
+            {data?.kinderen.map((k) => (
               <tr key={k.id}>
                 <td style={{ fontWeight: 600 }}>
                   {k.voornaam} {k.achternaam}
@@ -70,7 +81,7 @@ export function DagfilterPage() {
                 <td>{k.contracttype === Contracttype.Weken40 ? '40 wkn' : '49 wkn'}</td>
               </tr>
             ))}
-            {data?.length === 0 && (
+            {data?.kinderen.length === 0 && (
               <tr>
                 <td colSpan={4} style={{ textAlign: 'center', color: 'var(--text3)', padding: '24px 0' }}>
                   Niemand ingepland op deze dag.

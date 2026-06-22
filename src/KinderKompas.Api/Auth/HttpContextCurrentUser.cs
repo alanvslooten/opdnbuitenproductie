@@ -33,6 +33,11 @@ public sealed class HttpContextCurrentUser : ICurrentUser
             ? id
             : null;
 
+    public Guid? StamgroepId =>
+        Guid.TryParse(Principal?.FindFirst(KinderKompasClaims.StamgroepId)?.Value, out Guid id)
+            ? id
+            : null;
+
     public IReadOnlySet<string> Capabilities =>
         Principal?.FindAll(KinderKompasClaims.Capability).Select(c => c.Value).ToHashSet()
         ?? new HashSet<string>();

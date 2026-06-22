@@ -1,7 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from './client';
 import type {
-  AanwezigKindDto,
+  ContactDto,
+  ContactDetailDto,
+  ContactInvoer,
+  UrenoverzichtDto,
+  UrencorrectieInvoer,
+  RondleidingDto,
+  RondleidingInvoer,
+  DagFilterDto,
+  MaandPlanningDto,
+  BkrBerekenInvoer,
+  BkrBerekenResultaatDto,
   BeschikbaarheidDto,
   DashboardDto,
   DienstInvoer,
@@ -14,6 +24,7 @@ import type {
   RolRechtenDto,
   SchoolvakantieInvoer,
   GroepsportaalDagDto,
+  GroepsportaalDashboardDto,
   InklokInvoer,
   KindDto,
   KindInvoer,
@@ -21,6 +32,7 @@ import type {
   MedewerkerInvoer,
   PortaalMedewerkerDto,
   RoosterWeekDto,
+  VerstuurdRoosterDto,
   SchoolvakantieDto,
   StamgroepDto,
   ThuisRoosterDto,
@@ -63,7 +75,9 @@ export function useStamgroepMutaties() {
     onSuccess: invalideer,
   });
   const verwijderen = useMutation({
-    mutationFn: (id: string) => api<void>(`/api/stamgroepen/${id}`, { method: 'DELETE' }),
+    // Verwijderen vereist het wachtwoord van de beheerder ter bevestiging.
+    mutationFn: ({ id, wachtwoord }: { id: string; wachtwoord: string }) =>
+      api<void>(`/api/stamgroepen/${id}`, { method: 'DELETE', body: JSON.stringify({ wachtwoord }) }),
     onSuccess: invalideer,
   });
   return { aanmaken, bewerken, verwijderen };
@@ -119,12 +133,19 @@ export function useWeekplanning(datum: string) {
   });
 }
 
+export function useMaandplanning(datum: string) {
+  return useQuery({
+    queryKey: ['maandplanning', datum],
+    queryFn: () => api<MaandPlanningDto>(`/api/planning/maand?datum=${datum}`),
+  });
+}
+
 export function useDagplanning(datum: string, stamgroepId?: string) {
   const params = new URLSearchParams({ datum });
   if (stamgroepId) params.set('stamgroepId', stamgroepId);
   return useQuery({
     queryKey: ['dagplanning', datum, stamgroepId ?? 'alle'],
-    queryFn: () => api<AanwezigKindDto[]>(`/api/planning/dag?${params.toString()}`),
+    queryFn: () => api<DagFilterDto>(`/api/planning/dag?${params.toString()}`),
   });
 }
 
@@ -134,6 +155,55 @@ export function useSchoolvakanties() {
     queryKey: ['schoolvakanties'],
     queryFn: () => api<SchoolvakantieDto[]>('/api/schoolvakanties'),
   });
+}
+
+// --- Contacten (CRM) ---
+export function useContacten() {
+  return useQuery({
+    queryKey: ['contacten'],
+    queryFn: () => api<ContactDto[]>('/api/contacten'),
+  });
+}
+
+export function useContact(id: string | undefined) {
+  return useQuery({
+    queryKey: ['contact', id],
+    enabled: !!id,
+    queryFn: () => api<ContactDetailDto>(`/api/contacten/${id}`),
+  });
+}
+
+export function useContactMutaties() {
+  const qc = useQueryClient();
+  const invalideer = () => {
+    qc.invalidateQueries({ queryKey: ['contacten'] });
+    qc.invalidateQueries({ queryKey: ['contact'] });
+  };
+  const aanmaken = useMutation({
+    mutationFn: (invoer: ContactInvoer) =>
+      api<ContactDto>('/api/contacten', { method: 'POST', body: JSON.stringify(invoer) }),
+    onSuccess: invalideer,
+  });
+  const bewerken = useMutation({
+    mutationFn: ({ id, invoer }: { id: string; invoer: ContactInvoer }) =>
+      api<ContactDto>(`/api/contacten/${id}`, { method: 'PUT', body: JSON.stringify(invoer) }),
+    onSuccess: invalideer,
+  });
+  const verwijderen = useMutation({
+    mutationFn: (id: string) => api<void>(`/api/contacten/${id}`, { method: 'DELETE' }),
+    onSuccess: invalideer,
+  });
+  const rondleidingToevoegen = useMutation({
+    mutationFn: ({ id, invoer }: { id: string; invoer: RondleidingInvoer }) =>
+      api<RondleidingDto>(`/api/contacten/${id}/rondleidingen`, { method: 'POST', body: JSON.stringify(invoer) }),
+    onSuccess: invalideer,
+  });
+  const rondleidingVerwijderen = useMutation({
+    mutationFn: (rondleidingId: string) =>
+      api<void>(`/api/contacten/rondleidingen/${rondleidingId}`, { method: 'DELETE' }),
+    onSuccess: invalideer,
+  });
+  return { aanmaken, bewerken, verwijderen, rondleidingToevoegen, rondleidingVerwijderen };
 }
 
 // --- Wachtlijst ---
@@ -241,6 +311,33 @@ export function useMedewerkers() {
   return useQuery({
     queryKey: ['medewerkers'],
     queryFn: () => api<MedewerkerDto[]>('/api/medewerkers'),
+  });
+}
+
+export function useMedewerkerUren(id: string | undefined, van?: string, tot?: string) {
+  const p = new URLSearchParams();
+  if (van) p.set('van', van);
+  if (tot) p.set('tot', tot);
+  const qs = p.toString();
+  return useQuery({
+    queryKey: ['medewerker-uren', id, van ?? '', tot ?? ''],
+    enabled: !!id,
+    queryFn: () => api<UrenoverzichtDto>(`/api/medewerkers/${id}/uren${qs ? `?${qs}` : ''}`),
+  });
+}
+
+export function useUrencorrectie() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ registratieId, invoer }: { registratieId: string; invoer: UrencorrectieInvoer }) =>
+      api<UrenregistratieDto>(`/api/medewerkers/uren/${registratieId}/corrigeer`, {
+        method: 'PUT',
+        body: JSON.stringify(invoer),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['medewerker-uren'] });
+      qc.invalidateQueries({ queryKey: ['groep-uren'] });
+    },
   });
 }
 
@@ -363,9 +460,23 @@ export function useRooster(datum: string) {
   });
 }
 
+export function useVerstuurdeRoosters(van?: string, tot?: string) {
+  const p = new URLSearchParams();
+  if (van) p.set('van', van);
+  if (tot) p.set('tot', tot);
+  const qs = p.toString();
+  return useQuery({
+    queryKey: ['verstuurde-roosters', van ?? '', tot ?? ''],
+    queryFn: () => api<VerstuurdRoosterDto[]>(`/api/rooster/verstuurd${qs ? `?${qs}` : ''}`),
+  });
+}
+
 export function useRoosterMutaties() {
   const qc = useQueryClient();
-  const invalideer = () => qc.invalidateQueries({ queryKey: ['rooster'] });
+  const invalideer = () => {
+    qc.invalidateQueries({ queryKey: ['rooster'] });
+    qc.invalidateQueries({ queryKey: ['verstuurde-roosters'] });
+  };
 
   const genereren = useMutation({
     mutationFn: (datum: string) =>
@@ -375,6 +486,11 @@ export function useRoosterMutaties() {
   const versturen = useMutation({
     mutationFn: (roosterweekId: string) =>
       api<RoosterWeekDto>(`/api/rooster/${roosterweekId}/versturen`, { method: 'POST' }),
+    onSuccess: invalideer,
+  });
+  const herroepen = useMutation({
+    mutationFn: (roosterweekId: string) =>
+      api<RoosterWeekDto>(`/api/rooster/${roosterweekId}/herroepen`, { method: 'POST' }),
     onSuccess: invalideer,
   });
   const dienstBijwerken = useMutation({
@@ -391,7 +507,7 @@ export function useRoosterMutaties() {
     mutationFn: (id: string) => api<void>(`/api/rooster/dienst/${id}`, { method: 'DELETE' }),
     onSuccess: invalideer,
   });
-  return { genereren, versturen, dienstBijwerken, dienstToevoegen, dienstVerwijderen };
+  return { genereren, versturen, herroepen, dienstBijwerken, dienstToevoegen, dienstVerwijderen };
 }
 
 // === Fase 8 — Thuis-portaal ===
@@ -434,6 +550,17 @@ export function useThuisUren(van?: string, tot?: string) {
   });
 }
 
+export function useThuisUrenoverzicht(van?: string, tot?: string) {
+  const params = new URLSearchParams();
+  if (van) params.set('van', van);
+  if (tot) params.set('tot', tot);
+  const qs = params.toString();
+  return useQuery({
+    queryKey: ['thuis-urenoverzicht', van ?? '', tot ?? ''],
+    queryFn: () => api<UrenoverzichtDto>(`/api/thuisportaal/urenoverzicht${qs ? `?${qs}` : ''}`),
+  });
+}
+
 export function useThuisMutaties() {
   const qc = useQueryClient();
 
@@ -464,6 +591,13 @@ export function useThuisMutaties() {
 }
 
 // === Fase 8 — Groepsportaal ===
+export function useGroepsportaalDashboard(datum: string) {
+  return useQuery({
+    queryKey: ['groep-dashboard', datum],
+    queryFn: () => api<GroepsportaalDashboardDto>(`/api/groepsportaal/dashboard?datum=${datum}`),
+  });
+}
+
 export function useGroepsportaalDienst(datum: string) {
   return useQuery({
     queryKey: ['groep-dienst', datum],
@@ -503,8 +637,12 @@ export function useGroepsportaalMutaties() {
     onSuccess: invalideer,
   });
   const uitklokken = useMutation({
-    mutationFn: (id: string) =>
-      api<UrenregistratieDto>(`/api/groepsportaal/uitklokken/${id}`, { method: 'POST' }),
+    // uitgeklokt: optionele ISO-tijd (UTC); zonder telt "nu".
+    mutationFn: ({ id, uitgeklokt }: { id: string; uitgeklokt?: string }) =>
+      api<UrenregistratieDto>(`/api/groepsportaal/uitklokken/${id}`, {
+        method: 'POST',
+        body: JSON.stringify({ uitgeklokt: uitgeklokt ?? null }),
+      }),
     onSuccess: invalideer,
   });
   return { inklokken, uitklokken };
@@ -516,6 +654,17 @@ export function useDashboard(datum?: string) {
   return useQuery({
     queryKey: ['dashboard', datum ?? 'vandaag'],
     queryFn: () => api<DashboardDto>(`/api/dashboard${qs}`),
+  });
+}
+
+// --- BKR-snelrekenaar (calculator) ---
+export function useBkrBerekening() {
+  return useMutation({
+    mutationFn: (invoer: BkrBerekenInvoer) =>
+      api<BkrBerekenResultaatDto>('/api/bkr/bereken', {
+        method: 'POST',
+        body: JSON.stringify(invoer),
+      }),
   });
 }
 

@@ -34,12 +34,12 @@ public sealed class KindInvoerValidator : AbstractValidator<KindInvoer>
 
         RuleFor(x => x.Contracttype).IsInEnum();
 
-        When(x => x.Oudercontact is not null, () =>
+        RuleForEach(x => x.Oudercontacten).ChildRules(oc =>
         {
-            RuleFor(x => x.Oudercontact!.Naam).NotEmpty().MaximumLength(200);
-            RuleFor(x => x.Oudercontact!.Telefoon).MaximumLength(30);
-            RuleFor(x => x.Oudercontact!.Email)
-                .EmailAddress().When(x => !string.IsNullOrWhiteSpace(x.Oudercontact!.Email))
+            oc.RuleFor(o => o.Naam).NotEmpty().MaximumLength(200);
+            oc.RuleFor(o => o.Telefoon).MaximumLength(30);
+            oc.RuleFor(o => o.Email)
+                .EmailAddress().When(o => !string.IsNullOrWhiteSpace(o.Email))
                 .MaximumLength(200);
         });
     }

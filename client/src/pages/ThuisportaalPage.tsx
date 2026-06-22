@@ -4,11 +4,11 @@ import {
   useThuisMutaties,
   useThuisRooster,
   useThuisSaldo,
-  useThuisUren,
+  useThuisUrenoverzicht,
   useThuisVerlof,
 } from '../api/queries';
 import { ApiFout } from '../api/client';
-import { korteDatum, vandaagIso, verschuifDagen, weekBeginIso } from '../datum';
+import { datumNl, korteDatum, vandaagIso, verschuifDagen, weekBeginIso } from '../datum';
 import {
   VERLOFCATEGORIE_LABEL,
   VERLOFSTATUS_LABEL,
@@ -17,10 +17,6 @@ import {
   WEEKDAGEN,
   type ThuisVerlofInvoer,
 } from '../types';
-
-function urenLabel(kwartieren: number): string {
-  return `${(kwartieren / 4).toLocaleString('nl-NL')} u`;
-}
 
 function correctieLabel(kwartieren: number): string {
   if (kwartieren === 0) return '';
@@ -86,22 +82,32 @@ function MijnRooster({ weekBegin, setWeekBegin }: { weekBegin: string; setWeekBe
           <i className="ti ti-alert-triangle" />
           <span>Het rooster voor deze week is nog niet verstuurd door de planner.</span>
         </div>
-      ) : data.dagen.length === 0 ? (
-        <p style={{ fontSize: 12, color: 'var(--text3)' }}>Je bent deze week niet ingepland.</p>
       ) : (
-        <div>
-          {data.dagen.map((d) => (
-            <div key={`${d.datum}-${d.stamgroepId}`} className="tl-item">
-              <span className="tl-dot" style={{ background: 'var(--blue)' }} />
-              <div className="tl-body" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <h5>
-                  {korteDatum(d.datum)} · {d.stamgroepNaam}
-                  {d.taakomschrijving && <span style={{ fontWeight: 400, color: 'var(--text3)' }}> — {d.taakomschrijving}</span>}
-                </h5>
-                {d.urencorrectieKwartieren !== 0 && <p>{correctieLabel(d.urencorrectieKwartieren)}</p>}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>
+          {['Ma', 'Di', 'Wo', 'Do', 'Vr'].map((label, i) => {
+            const datum = verschuifDagen(weekBegin, i);
+            const diensten = data.dagen.filter((d) => d.datum === datum);
+            return (
+              <div key={datum} style={{ border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', overflow: 'hidden', minHeight: 76 }}>
+                <div style={{ background: 'var(--surface2)', padding: '4px 6px', fontSize: 10, fontWeight: 700, color: 'var(--text3)', textAlign: 'center' }}>
+                  {label} {datum.slice(8, 10)}
+                </div>
+                <div style={{ padding: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {diensten.length === 0 ? (
+                    <span style={{ fontSize: 10, color: 'var(--text3)', textAlign: 'center' }}>—</span>
+                  ) : (
+                    diensten.map((d) => (
+                      <div key={d.stamgroepId} style={{ background: 'var(--blue-l)', color: 'var(--blue)', borderRadius: 5, padding: '4px 6px', fontSize: 10, fontWeight: 600, textAlign: 'center' }}>
+                        {d.stamgroepNaam}
+                        {d.taakomschrijving && <div style={{ fontWeight: 400 }}>{d.taakomschrijving}</div>}
+                        {d.urencorrectieKwartieren !== 0 && <div style={{ fontWeight: 400, opacity: 0.8 }}>{correctieLabel(d.urencorrectieKwartieren)}</div>}
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </Kaart>
@@ -289,30 +295,80 @@ function MijnVerlof() {
   );
 }
 
+const UREN_PERIODES = [
+  { sleutel: 'maand', label: 'Maand' },
+  { sleutel: 'kwartaal', label: 'Kwartaal' },
+  { sleutel: 'jaar', label: 'Jaar' },
+] as const;
+
+function urenPeriodeVan(sleutel: string): string {
+  const [j, m] = vandaagIso().slice(0, 10).split('-').map(Number);
+  if (sleutel === 'jaar') return `${j}-01-01`;
+  if (sleutel === 'kwartaal') {
+    const km = Math.floor((m - 1) / 3) * 3 + 1;
+    return `${j}-${String(km).padStart(2, '0')}-01`;
+  }
+  return `${j}-${String(m).padStart(2, '0')}-01`;
+}
+
 function MijnUren() {
-  const { data, isLoading } = useThuisUren();
+  const [periode, setPeriode] = useState('maand');
+  const { data, isLoading } = useThuisUrenoverzicht(urenPeriodeVan(periode));
+
+  const tabs = (
+    <div className="tabs" style={{ marginBottom: 0 }}>
+      {UREN_PERIODES.map((p) => (
+        <button key={p.sleutel} className={`tab${periode === p.sleutel ? ' on' : ''}`} onClick={() => setPeriode(p.sleutel)}>
+          {p.label}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
-    <Kaart titel="Mijn geregistreerde uren (deze week)" icon="ti-clock-hour-4">
-      {isLoading ? (
+    <Kaart titel="Mijn geregistreerde uren" icon="ti-clock-hour-4" rechts={tabs}>
+      {isLoading || !data ? (
         <p style={{ color: 'var(--text3)' }}>Laden…</p>
-      ) : data && data.length > 0 ? (
-        <div>
-          {data.map((u) => (
-            <div key={u.id} className="tl-item">
-              <span className="tl-dot" style={{ background: u.isOpen ? 'var(--amber)' : 'var(--green)' }} />
-              <div className="tl-body" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h5>
-                  {korteDatum(u.datum)}
-                  {u.stamgroepNaam && <span style={{ fontWeight: 400, color: 'var(--text3)' }}> · {u.stamgroepNaam}</span>}
-                </h5>
-                <p>{u.isOpen ? <em style={{ color: 'var(--amber)' }}>nog ingeklokt</em> : urenLabel(u.gewerkteKwartieren)}</p>
-              </div>
-            </div>
-          ))}
-        </div>
       ) : (
-        <p style={{ fontSize: 12, color: 'var(--text3)' }}>Geen uren geregistreerd deze week.</p>
+        <>
+          <div className="g3" style={{ marginBottom: 14 }}>
+            <Stat label="Gewerkt" waarde={`${data.gewerkteUren} u`} kleur="var(--blue)" />
+            <Stat label="Verwacht (contract)" waarde={`${data.verwachteUren} u`} kleur="var(--text2)" />
+            <Stat
+              label={data.meerMinderUren >= 0 ? 'Meerwerk' : 'Minderwerk'}
+              waarde={`${data.meerMinderUren >= 0 ? '+' : ''}${data.meerMinderUren} u`}
+              kleur={data.meerMinderUren >= 0 ? 'var(--green)' : 'var(--rose)'}
+            />
+          </div>
+          <h5 style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 6 }}>
+            Per week
+          </h5>
+          {data.perWeek.length === 0 ? (
+            <p style={{ fontSize: 12, color: 'var(--text3)' }}>Geen geregistreerde uren in deze periode.</p>
+          ) : (
+            data.perWeek.map((w) => (
+              <div key={w.weekBegin} className="tl-item">
+                <span className="tl-dot" style={{ background: 'var(--green)' }} />
+                <div className="tl-body" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h5>week van {datumNl(w.weekBegin)}</h5>
+                  <p>
+                    <strong>{w.gewerkteUren} u</strong> · {w.aantalSessies} dag(en)
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
+        </>
       )}
     </Kaart>
+  );
+}
+
+function Stat({ label, waarde, kleur }: { label: string; waarde: string; kleur: string }) {
+  return (
+    <div style={{ background: 'var(--surface2)', borderRadius: 'var(--r-sm)', padding: '10px 12px' }}>
+      <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase' }}>{label}</div>
+      <div style={{ fontSize: 20, fontWeight: 700, color: kleur }}>{waarde}</div>
+    </div>
   );
 }

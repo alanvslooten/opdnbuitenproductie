@@ -14,7 +14,16 @@ public sealed record MedewerkerDto(
     Weekdag Beschikbaarheidsdagen,
     decimal Contracturen,
     Guid? VasteStamgroepId,
-    string? VasteStamgroepNaam);
+    string? VasteStamgroepNaam,
+    string? Telefoon = null,
+    string? Email = null,
+    string? NoodcontactNaam = null,
+    string? NoodcontactTelefoon = null,
+    bool ContractVast = false,
+    DateOnly? Contractbegindatum = null,
+    DateOnly? Contracteinddatum = null,
+    int? ResterendeContractmaanden = null,
+    bool HeeftPincode = false);
 
 /// <summary>Invoermodel voor het aanmaken/bewerken van een medewerker.</summary>
 public sealed record MedewerkerInvoer(
@@ -24,7 +33,15 @@ public sealed record MedewerkerInvoer(
     Weekdag VasteWerkdagen,
     Weekdag Beschikbaarheidsdagen,
     decimal Contracturen,
-    Guid? VasteStamgroepId);
+    Guid? VasteStamgroepId,
+    string? Telefoon = null,
+    string? Email = null,
+    string? NoodcontactNaam = null,
+    string? NoodcontactTelefoon = null,
+    bool ContractVast = false,
+    DateOnly? Contractbegindatum = null,
+    DateOnly? Contracteinddatum = null,
+    string? Pincode = null);
 
 /// <summary>
 /// Validatie voor medewerker-invoer. De roosterlagen mogen elkaar niet overlappen:
@@ -71,7 +88,40 @@ public sealed class MedewerkerInvoerValidator : AbstractValidator<MedewerkerInvo
 /// <summary>Projecteert een <see cref="Medewerker"/> naar een <see cref="MedewerkerDto"/>.</summary>
 public static class MedewerkerMapper
 {
-    public static MedewerkerDto NaarDto(Medewerker m) =>
-        new(m.Id, m.Voornaam, m.Achternaam, m.Rol, m.VasteWerkdagen, m.Beschikbaarheidsdagen,
-            m.Contracturen, m.VasteStamgroepId, m.VasteStamgroep?.Naam);
+    public static MedewerkerDto NaarDto(Medewerker m)
+    {
+        DateOnly vandaag = DateOnly.FromDateTime(DateTime.UtcNow);
+        return new(m.Id, m.Voornaam, m.Achternaam, m.Rol, m.VasteWerkdagen, m.Beschikbaarheidsdagen,
+            m.Contracturen, m.VasteStamgroepId, m.VasteStamgroep?.Naam,
+            m.Telefoon, m.Email, m.NoodcontactNaam, m.NoodcontactTelefoon,
+            m.ContractVast, m.Contractbegindatum, m.Contracteinddatum,
+            m.ResterendeContractmaanden(vandaag),
+            !string.IsNullOrEmpty(m.Pincode));
+    }
+
+    /// <summary>Zet de invoer op een (nieuw of bestaand) medewerker-record.</summary>
+    public static void PasInvoerToe(Medewerker m, MedewerkerInvoer invoer)
+    {
+        m.Voornaam = invoer.Voornaam;
+        m.Achternaam = invoer.Achternaam;
+        m.Rol = invoer.Rol;
+        m.VasteWerkdagen = invoer.VasteWerkdagen;
+        m.Beschikbaarheidsdagen = invoer.Beschikbaarheidsdagen;
+        m.Contracturen = invoer.Contracturen;
+        m.VasteStamgroepId = invoer.VasteStamgroepId;
+        m.Telefoon = Leeg(invoer.Telefoon);
+        m.Email = Leeg(invoer.Email);
+        m.NoodcontactNaam = Leeg(invoer.NoodcontactNaam);
+        m.NoodcontactTelefoon = Leeg(invoer.NoodcontactTelefoon);
+        m.ContractVast = invoer.ContractVast;
+        m.Contractbegindatum = invoer.Contractbegindatum;
+        m.Contracteinddatum = invoer.ContractVast ? null : invoer.Contracteinddatum;
+        // Pincode alleen overschrijven als er een (niet-lege) waarde is meegegeven.
+        if (!string.IsNullOrWhiteSpace(invoer.Pincode))
+        {
+            m.Pincode = invoer.Pincode.Trim();
+        }
+    }
+
+    private static string? Leeg(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 }

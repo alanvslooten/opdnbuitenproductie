@@ -16,13 +16,12 @@ public static class KindMapper
 {
     public static KindDto NaarDto(Kind kind, ICurrentUser gebruiker, DateOnly peildatum)
     {
-        OudercontactDto? oudercontact =
-            gebruiker.Heeft(Capabilities.MagOudergegevensZien) && kind.Oudercontact is not null
-                ? new OudercontactDto(
-                    kind.Oudercontact.Naam,
-                    kind.Oudercontact.Telefoon,
-                    kind.Oudercontact.Email)
-                : null;
+        IReadOnlyList<OudercontactDto> oudercontacten =
+            gebruiker.Heeft(Capabilities.MagOudergegevensZien)
+                ? kind.Oudercontacten
+                    .Select(o => new OudercontactDto(o.Naam, o.Telefoon, o.Email))
+                    .ToList()
+                : [];
 
         return new KindDto(
             kind.Id,
@@ -37,7 +36,7 @@ public static class KindMapper
             kind.GewensteOpvangdagen,
             kind.WordtBinnenkortVier(peildatum),
             kind.MentorId,
-            oudercontact);
+            oudercontacten);
     }
 
     /// <summary>Zet de waarden uit een invoermodel op een (nieuw of bestaand) kind.</summary>
@@ -52,11 +51,11 @@ public static class KindMapper
         kind.Contracttype = invoer.Contracttype;
         kind.GewensteOpvangdagen = invoer.GewensteOpvangdagen;
         kind.MentorId = invoer.MentorId;
-        kind.Oudercontact = invoer.Oudercontact is null
-            ? null
-            : new Oudercontact(
-                invoer.Oudercontact.Naam,
-                invoer.Oudercontact.Telefoon,
-                invoer.Oudercontact.Email);
+        // Volledige vervanging: de lijst uit de invoer is de nieuwe waarheid (lege
+        // velden eruit gefilterd zodat een leeg formulier geen leeg contact opslaat).
+        kind.Oudercontacten = invoer.Oudercontacten
+            .Where(o => !string.IsNullOrWhiteSpace(o.Naam) || !string.IsNullOrWhiteSpace(o.Telefoon) || !string.IsNullOrWhiteSpace(o.Email))
+            .Select(o => new Oudercontact(o.Naam, o.Telefoon, o.Email))
+            .ToList();
     }
 }

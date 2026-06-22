@@ -27,6 +27,10 @@ public class WachtlijstInschrijving : TenantEntiteit
     /// </summary>
     public Oudercontact? Oudercontact { get; set; }
 
+    /// <summary>Het contact (ouder/verzorger/gezin) waartoe deze inschrijving hoort. Optioneel.</summary>
+    public Guid? ContactId { get; set; }
+    public Contact? Contact { get; set; }
+
     /// <summary>De datum waarop het kind op de wachtlijst is gezet (bepaalt de anciënniteit).</summary>
     public DateOnly InschrijfdatumWachtlijst { get; set; }
 

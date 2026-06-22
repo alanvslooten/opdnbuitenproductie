@@ -16,8 +16,22 @@ public sealed record UrenregistratieDto(
     bool IsOpen,
     int GewerkteKwartieren);
 
-/// <summary>Invoer voor het inklokken op het tablet: de medewerker kiest zichzelf.</summary>
-public sealed record InklokInvoer(Guid MedewerkerId, Guid? RoosterdienstId, Guid? StamgroepId);
+/// <summary>
+/// Invoer voor het inklokken op het tablet: de medewerker kiest zichzelf en bevestigt
+/// met de eigen <see cref="Pincode"/> (identiteitscheck — voorkomt dat iemand een
+/// collega klokt). De pincode is optioneel zolang de medewerker er nog geen heeft.
+/// </summary>
+public sealed record InklokInvoer(Guid MedewerkerId, Guid? RoosterdienstId, Guid? StamgroepId, string? Pincode = null);
+
+/// <summary>
+/// Invoer voor het uitklokken. <see cref="Uitgeklokt"/> is optioneel: zonder waarde
+/// telt het huidige tijdstip; mét waarde kan een vergeten uitklokmoment achteraf op de
+/// juiste tijd worden gezet.
+/// </summary>
+public sealed record UitklokInvoer(DateTime? Uitgeklokt);
+
+/// <summary>Beheerder-correctie van een urenregistratie: de in-/uitkloktijden achteraf zetten.</summary>
+public sealed record UrencorrectieInvoer(DateTime Ingeklokt, DateTime? Uitgeklokt);
 
 /// <summary>Projecteert een <see cref="Urenregistratie"/> naar zijn leesmodel.</summary>
 public static class UrenregistratieMapper

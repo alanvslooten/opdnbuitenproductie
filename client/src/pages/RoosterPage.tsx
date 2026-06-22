@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from 'react';
-import { useRooster, useRoosterMutaties } from '../api/queries';
-import { korteDatum, vandaagIso, verschuifDagen, weekBeginIso } from '../datum';
+import { useRooster, useRoosterMutaties, useVerstuurdeRoosters } from '../api/queries';
+import { datumNl, korteDatum, vandaagIso, verschuifDagen, weekBeginIso } from '../datum';
 import { RoosterCelKleur, RoosterStatus, type RoosterCelDto } from '../types';
 
 const CEL_STYLE: Record<number, CSSProperties> = {
@@ -22,7 +22,7 @@ interface EditState {
 export function RoosterPage() {
   const [datum, setDatum] = useState(vandaagIso());
   const { data, isLoading, error } = useRooster(datum);
-  const { genereren, versturen, dienstBijwerken, dienstToevoegen, dienstVerwijderen } = useRoosterMutaties();
+  const { genereren, versturen, herroepen, dienstBijwerken, dienstToevoegen, dienstVerwijderen } = useRoosterMutaties();
   const [edit, setEdit] = useState<EditState | null>(null);
 
   const verstuurd = data?.status === RoosterStatus.Verstuurd;
@@ -79,6 +79,19 @@ export function RoosterPage() {
             <i className="ti ti-send" /> Rooster versturen
           </button>
         )}
+        {data?.bestaat && verstuurd && data.roosterweekId && (
+          <button
+            onClick={() => {
+              if (confirm('Verstuurd rooster herroepen? Het gaat terug naar concept en kan daarna opnieuw worden verstuurd.')) {
+                herroepen.mutate(data.roosterweekId!);
+              }
+            }}
+            disabled={herroepen.isPending}
+            className="btn btn-amber btn-sm"
+          >
+            <i className="ti ti-arrow-back-up" /> Herroepen
+          </button>
+        )}
       </div>
 
       {isLoading && (
@@ -109,7 +122,7 @@ export function RoosterPage() {
                       style={{ marginTop: 4 }}
                       title={`${ind.aantalKinderen} kinderen · nodig ${ind.nodigPmers ?? '—'} · ingepland ${ind.ingeplandPmers}`}
                     >
-                      {ind.ingeplandPmers}/{ind.nodigPmers ?? '!'} pm
+                      {ind.ingeplandPmers}/{ind.nodigPmers ?? '!'} b
                     </span>
                   </th>
                 ))}
@@ -162,9 +175,11 @@ export function RoosterPage() {
       ))}
 
       <p style={{ fontSize: 10, color: 'var(--text3)' }}>
-        Indicator = ingepland/nodig pm'ers (groen=marge, oranje=precies genoeg, rood=tekort of groep te vol).
+        Indicator = ingepland/nodig begeleiders (groen=marge, oranje=precies genoeg, rood=tekort of groep te vol).
         Cel: blauw=dienst, oranje=verlof aangevraagd, groen=verlof goedgekeurd, rood=ziek. Klik een lege cel om bij te plannen.
       </p>
+
+      <VerstuurdeRoostersLog />
 
       {edit && (
         <div className="overlay on" onClick={() => setEdit(null)}>
@@ -210,6 +225,75 @@ export function RoosterPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+const PERIODES = [
+  { sleutel: 'alles', label: 'Alles' },
+  { sleutel: 'jaar', label: 'Dit jaar' },
+  { sleutel: 'kwartaal', label: 'Dit kwartaal' },
+  { sleutel: 'maand', label: 'Deze maand' },
+  { sleutel: 'week', label: 'Deze week' },
+] as const;
+
+// Begin-datum (ISO) van de gekozen periode, of undefined voor "alles".
+function periodeVan(sleutel: string): string | undefined {
+  if (sleutel === 'alles') return undefined;
+  if (sleutel === 'week') return weekBeginIso(vandaagIso());
+  const [j, m] = vandaagIso().slice(0, 10).split('-').map(Number);
+  if (sleutel === 'jaar') return `${j}-01-01`;
+  if (sleutel === 'maand') return `${j}-${String(m).padStart(2, '0')}-01`;
+  // kwartaal
+  const kwartaalStartMaand = Math.floor((m - 1) / 3) * 3 + 1;
+  return `${j}-${String(kwartaalStartMaand).padStart(2, '0')}-01`;
+}
+
+function VerstuurdeRoostersLog() {
+  const [periode, setPeriode] = useState<string>('alles');
+  const { data } = useVerstuurdeRoosters(periodeVan(periode));
+
+  return (
+    <div className="card" style={{ marginTop: 16 }}>
+      <div className="card-h">
+        <h3>
+          <i className="ti ti-history" style={{ color: 'var(--primary)' }} /> Verstuurde roosters
+        </h3>
+        <div className="tabs" style={{ marginBottom: 0 }}>
+          {PERIODES.map((p) => (
+            <button key={p.sleutel} className={`tab${periode === p.sleutel ? ' on' : ''}`} onClick={() => setPeriode(p.sleutel)}>
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="card-b" style={{ padding: 0 }}>
+        <table className="tbl">
+          <thead>
+            <tr>
+              <th>Week van</th>
+              <th>Verstuurd op</th>
+              <th>Diensten</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data?.map((r) => (
+              <tr key={r.id}>
+                <td style={{ fontWeight: 600 }}>{datumNl(r.weekBegin)}</td>
+                <td style={{ color: 'var(--text2)' }}>{r.verstuurdOp ? datumNl(r.verstuurdOp.slice(0, 10)) : '—'}</td>
+                <td>{r.aantalDiensten}</td>
+              </tr>
+            ))}
+            {data && data.length === 0 && (
+              <tr>
+                <td colSpan={3} style={{ textAlign: 'center', color: 'var(--text3)', padding: '20px 0' }}>
+                  Geen verstuurde roosters in deze periode.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

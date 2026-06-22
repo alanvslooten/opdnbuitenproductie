@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useKind, useKindMutaties, useMedewerkers, useStamgroepen } from '../api/queries';
 import { ApiFout } from '../api/client';
 import { OpvangdagenKiezer } from '../components/OpvangdagenKiezer';
-import { Contracttype, Weekdag, type KindInvoer } from '../types';
+import { Contracttype, Weekdag, type KindInvoer, type OudercontactDto } from '../types';
 
 const LEEG: KindInvoer = {
   voornaam: '',
@@ -15,8 +15,10 @@ const LEEG: KindInvoer = {
   contracttype: Contracttype.Weken49,
   gewensteOpvangdagen: Weekdag.Maandag | Weekdag.Dinsdag,
   mentorId: null,
-  oudercontact: null,
+  oudercontacten: [],
 };
+
+const LEEG_CONTACT: OudercontactDto = { naam: '', telefoon: '', email: '' };
 
 export function KindFormPage() {
   const { id } = useParams();
@@ -29,7 +31,6 @@ export function KindFormPage() {
   const { aanmaken, bewerken } = useKindMutaties();
 
   const [model, setModel] = useState<KindInvoer>(LEEG);
-  const [ouder, setOuder] = useState(false);
   const [fout, setFout] = useState<string | null>(null);
 
   useEffect(() => {
@@ -44,9 +45,8 @@ export function KindFormPage() {
         contracttype: bestaand.contracttype,
         gewensteOpvangdagen: bestaand.gewensteOpvangdagen,
         mentorId: bestaand.mentorId,
-        oudercontact: bestaand.oudercontact,
+        oudercontacten: bestaand.oudercontacten ?? [],
       });
-      setOuder(!!bestaand.oudercontact);
     }
   }, [bestaand]);
 
@@ -54,17 +54,28 @@ export function KindFormPage() {
     setModel((m) => ({ ...m, [veld]: waarde }));
   }
 
-  function zetOuder(veld: 'naam' | 'telefoon' | 'email', waarde: string) {
+  function zetContact(index: number, veld: keyof OudercontactDto, waarde: string) {
     setModel((m) => ({
       ...m,
-      oudercontact: { naam: '', telefoon: '', email: '', ...m.oudercontact, [veld]: waarde },
+      oudercontacten: m.oudercontacten.map((c, i) => (i === index ? { ...c, [veld]: waarde } : c)),
     }));
+  }
+
+  function voegContactToe() {
+    setModel((m) => ({ ...m, oudercontacten: [...m.oudercontacten, { ...LEEG_CONTACT }] }));
+  }
+
+  function verwijderContact(index: number) {
+    setModel((m) => ({ ...m, oudercontacten: m.oudercontacten.filter((_, i) => i !== index) }));
   }
 
   async function verstuur(e: FormEvent) {
     e.preventDefault();
     setFout(null);
-    const invoer: KindInvoer = { ...model, oudercontact: ouder ? model.oudercontact : null };
+    const invoer: KindInvoer = {
+      ...model,
+      oudercontacten: model.oudercontacten.filter((c) => c.naam.trim() || c.telefoon.trim() || c.email.trim()),
+    };
     try {
       if (bewerkenModus && id) {
         await bewerken.mutateAsync({ id, invoer });
@@ -150,23 +161,47 @@ export function KindFormPage() {
           </div>
 
           <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14, marginTop: 6 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 600, color: 'var(--text2)' }}>
-              <input type="checkbox" checked={ouder} onChange={(e) => setOuder(e.target.checked)} />
-              Oudercontact toevoegen
-            </label>
-            {ouder && (
-              <div className="frow" style={{ marginTop: 12, gridTemplateColumns: '1fr 1fr 1fr' }}>
-                <Veld label="Naam">
-                  <input value={model.oudercontact?.naam ?? ''} onChange={(e) => zetOuder('naam', e.target.value)} />
-                </Veld>
-                <Veld label="Telefoon">
-                  <input value={model.oudercontact?.telefoon ?? ''} onChange={(e) => zetOuder('telefoon', e.target.value)} />
-                </Veld>
-                <Veld label="E-mail">
-                  <input type="email" value={model.oudercontact?.email ?? ''} onChange={(e) => zetOuder('email', e.target.value)} />
-                </Veld>
-              </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)' }}>
+                Oudercontacten (ouder / verzorger / voogd)
+              </span>
+              <button type="button" onClick={voegContactToe} className="btn btn-outline btn-xs">
+                <i className="ti ti-plus" /> Contact toevoegen
+              </button>
+            </div>
+            <p style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 8 }}>
+              Leg er bij voorkeur minimaal twee vast. De eerste geldt als primair contact.
+            </p>
+            {model.oudercontacten.length === 0 && (
+              <p style={{ fontSize: 12, color: 'var(--text3)' }}>Nog geen contacten.</p>
             )}
+            {model.oudercontacten.map((c, i) => (
+              <div
+                key={i}
+                style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 10 }}
+              >
+                <div className="frow" style={{ gridTemplateColumns: '1fr 1fr 1fr', flex: 1 }}>
+                  <Veld label={i === 0 ? 'Naam (primair)' : 'Naam'}>
+                    <input value={c.naam} onChange={(e) => zetContact(i, 'naam', e.target.value)} />
+                  </Veld>
+                  <Veld label="Telefoon">
+                    <input value={c.telefoon} onChange={(e) => zetContact(i, 'telefoon', e.target.value)} />
+                  </Veld>
+                  <Veld label="E-mail">
+                    <input type="email" value={c.email} onChange={(e) => zetContact(i, 'email', e.target.value)} />
+                  </Veld>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => verwijderContact(i)}
+                  className="btn btn-rose btn-xs"
+                  title="Verwijderen"
+                  style={{ marginBottom: 2 }}
+                >
+                  <i className="ti ti-trash" />
+                </button>
+              </div>
+            ))}
           </div>
         </div>
 

@@ -180,7 +180,7 @@ export function VoorstelDialog({
                       <th>Voorstellen?</th>
                       <th>Dag</th>
                       <th>Plek</th>
-                      <th>BKR (pm'ers)</th>
+                      <th>BKR (begeleiders)</th>
                       <th>Startdatum dag</th>
                     </tr>
                   </thead>
@@ -276,7 +276,7 @@ function DagRij({
         ) : (
           <span style={{ color: dag.extraPmerNodig ? 'var(--amber)' : 'var(--text2)' }}>
             {dag.vereistePmersNu ?? '—'} → {dag.vereistePmersNa ?? '—'}
-            {dag.extraPmerNodig && <span style={{ marginLeft: 4, fontSize: 10 }}>(+1 pm'er)</span>}
+            {dag.extraPmerNodig && <span style={{ marginLeft: 4, fontSize: 10 }}>(+1 begeleider)</span>}
           </span>
         )}
       </td>

@@ -22,7 +22,7 @@ public sealed record KindDto(
     Weekdag GewensteOpvangdagen,
     bool WordtBinnenkortVier,
     Guid? MentorId,
-    OudercontactDto? Oudercontact);
+    IReadOnlyList<OudercontactDto> Oudercontacten);
 
 public sealed record OudercontactDto(string Naam, string Telefoon, string Email);
 
@@ -41,4 +41,4 @@ public sealed record KindInvoer(
     Contracttype Contracttype,
     Weekdag GewensteOpvangdagen,
     Guid? MentorId,
-    OudercontactDto? Oudercontact);
+    IReadOnlyList<OudercontactDto> Oudercontacten);

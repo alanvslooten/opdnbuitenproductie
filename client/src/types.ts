@@ -53,7 +53,7 @@ export interface KindDto {
   gewensteOpvangdagen: number;
   wordtBinnenkortVier: boolean;
   mentorId: string | null;
-  oudercontact: OudercontactDto | null;
+  oudercontacten: OudercontactDto[];
 }
 
 export interface KindInvoer {
@@ -66,7 +66,7 @@ export interface KindInvoer {
   contracttype: number;
   gewensteOpvangdagen: number;
   mentorId: string | null;
-  oudercontact: OudercontactDto | null;
+  oudercontacten: OudercontactDto[];
 }
 
 export interface SchoolvakantieDto {
@@ -85,6 +85,32 @@ export interface BkrDagDto {
   melding: string | null;
 }
 
+// --- BKR-snelrekenaar (calculator) ---
+
+export interface BkrBerekenInvoer {
+  nulTotEen: number;
+  eenTotTwee: number;
+  tweeTotDrie: number;
+  drieTotVier: number;
+  aanwezigePmers: number;
+}
+
+export interface BkrOnderdeelDto {
+  label: string;
+  aantalKinderen: number;
+  vereistePmers: number;
+}
+
+/** status: 'leeg' | 'ok' | 'driehuurs' | 'overschreden'. */
+export interface BkrBerekenResultaatDto {
+  totaalKinderen: number;
+  vereisteHoeveelheidPmers: number;
+  aanwezigePmers: number;
+  onderdelen: BkrOnderdeelDto[];
+  status: string;
+  melding: string;
+}
+
 export interface AanwezigKindDto {
   id: string;
   voornaam: string;
@@ -94,12 +120,24 @@ export interface AanwezigKindDto {
   contracttype: number;
 }
 
+export interface PlanningBegeleiderDto {
+  medewerkerId: string;
+  naam: string;
+  taakomschrijving: string | null;
+}
+
 export interface DagPlanningDto {
   datum: Iso;
   dag: number;
   isSchoolvakantie: boolean;
   kinderen: AanwezigKindDto[];
   bkr: BkrDagDto;
+  begeleiders: PlanningBegeleiderDto[];
+}
+
+export interface DagFilterDto {
+  kinderen: AanwezigKindDto[];
+  begeleiders: PlanningBegeleiderDto[];
 }
 
 export interface StamgroepWeekDto {
@@ -114,6 +152,12 @@ export interface WeekplanningDto {
   stamgroepen: StamgroepWeekDto[];
 }
 
+export interface MaandPlanningDto {
+  jaar: number;
+  maand: number;
+  weken: WeekplanningDto[];
+}
+
 export interface AuthResponse {
   vereistTweeFactor: boolean;
   accessToken: string | null;
@@ -121,6 +165,8 @@ export interface AuthResponse {
   verlooptOpUtc: string | null;
   rol: string | null;
   capabilities: string[];
+  stamgroepNaam: string | null;
+  weergavenaam: string | null;
 }
 
 // --- Fase 6: wachtlijst & plaatsing ---
@@ -230,10 +276,92 @@ export interface VoorstelDto {
   dagen: VoorstelDagDto[];
 }
 
+// === Sectie E — Contacten (CRM) ===
+
+/** Rondleiding-status: 0=Gepland, 1=Gehad, 2=Geannuleerd. */
+export const RondleidingStatus = { Gepland: 0, Gehad: 1, Geannuleerd: 2 } as const;
+export const RONDLEIDING_STATUS_LABEL = ['Gepland', 'Gehad', 'Geannuleerd'];
+
+export interface ContactDto {
+  id: string;
+  voornaam: string;
+  achternaam: string;
+  volledigeNaam: string;
+  telefoon: string | null;
+  email: string | null;
+  isIntern: boolean;
+  aantekeningen: string | null;
+  aantalRondleidingen: number;
+  aantalInschrijvingen: number;
+  aantalGeplaatsteKinderen: number;
+}
+
+export interface RondleidingDto {
+  id: string;
+  datum: Iso;
+  status: number;
+  notitie: string | null;
+}
+
+export interface ContactInschrijvingDto {
+  id: string;
+  kindNaam: string;
+  gewensteStartdatum: Iso;
+  status: number;
+  aantalVoorstellen: number;
+}
+
+export interface ContactKindDto {
+  id: string;
+  naam: string;
+  stamgroepNaam: string;
+}
+
+export interface ContactDetailDto {
+  id: string;
+  voornaam: string;
+  achternaam: string;
+  telefoon: string | null;
+  email: string | null;
+  isIntern: boolean;
+  aantekeningen: string | null;
+  rondleidingen: RondleidingDto[];
+  inschrijvingen: ContactInschrijvingDto[];
+  geplaatsteKinderen: ContactKindDto[];
+}
+
+export interface ContactInvoer {
+  voornaam: string;
+  achternaam: string;
+  telefoon: string | null;
+  email: string | null;
+  isIntern: boolean;
+  aantekeningen: string | null;
+}
+
+export interface RondleidingInvoer {
+  datum: Iso;
+  status: number;
+  notitie: string | null;
+}
+
 // === Fase 5 — werkrooster, medewerkers, verlof ===
 
 /** Rol numeriek (zoals de enum over de lijn komt). */
 export const ROL_LABEL = ['Beheerder', 'Hulpbeheerder', 'Senior', 'Junior', 'Groepsportaal'];
+
+/**
+ * Leesbaar rol-label voor de zijbalk, gesleuteld op de rol-NAAM zoals die in de
+ * auth-respons/claim staat (enum-naam, bv. "Senior"). Erik wil de functietitel
+ * zien i.p.v. een kale rolnaam.
+ */
+export const ROL_WEERGAVE: Record<string, string> = {
+  Beheerder: 'Beheerder',
+  Hulpbeheerder: 'Hulpbeheerder',
+  Senior: 'Senior Medewerker',
+  Junior: 'Junior Medewerker',
+  Groepsportaal: 'Groepsportaal',
+};
 
 /** Verlofcategorie: 0=Vakantieuren, 1=Verlofbudget. */
 export const VerlofCategorie = { Vakantieuren: 0, Verlofbudget: 1 } as const;
@@ -268,6 +396,15 @@ export interface MedewerkerDto {
   contracturen: number;
   vasteStamgroepId: string | null;
   vasteStamgroepNaam: string | null;
+  telefoon: string | null;
+  email: string | null;
+  noodcontactNaam: string | null;
+  noodcontactTelefoon: string | null;
+  contractVast: boolean;
+  contractbegindatum: Iso | null;
+  contracteinddatum: Iso | null;
+  resterendeContractmaanden: number | null;
+  heeftPincode: boolean;
 }
 
 export interface MedewerkerInvoer {
@@ -278,6 +415,35 @@ export interface MedewerkerInvoer {
   beschikbaarheidsdagen: number;
   contracturen: number;
   vasteStamgroepId: string | null;
+  telefoon?: string | null;
+  email?: string | null;
+  noodcontactNaam?: string | null;
+  noodcontactTelefoon?: string | null;
+  contractVast?: boolean;
+  contractbegindatum?: Iso | null;
+  contracteinddatum?: Iso | null;
+  pincode?: string | null;
+}
+
+export interface UrenWeekDto {
+  weekBegin: Iso;
+  gewerkteUren: number;
+  aantalSessies: number;
+}
+
+export interface UrenoverzichtDto {
+  van: Iso;
+  tot: Iso;
+  gewerkteUren: number;
+  verwachteUren: number;
+  meerMinderUren: number;
+  aantalSessies: number;
+  perWeek: UrenWeekDto[];
+}
+
+export interface UrencorrectieInvoer {
+  ingeklokt: string;
+  uitgeklokt: string | null;
 }
 
 export interface VerlofaanvraagDto {
@@ -368,6 +534,13 @@ export interface RoosterGroepDto {
   rijen: RoosterMedewerkerRijDto[];
 }
 
+export interface VerstuurdRoosterDto {
+  id: string;
+  weekBegin: Iso;
+  verstuurdOp: string | null;
+  aantalDiensten: number;
+}
+
 export interface RoosterWeekDto {
   weekBegin: Iso;
   bestaat: boolean;
@@ -388,6 +561,7 @@ export interface DienstInvoer {
 export const Capabilities = {
   OudergegevensZien: 'MagOudergegevensZien',
   KinderenBeheren: 'MagKinderenBeheren',
+  PlanningZien: 'MagPlanningZien',
   WachtlijstBeheren: 'MagWachtlijstBeheren',
   RoosterBeheren: 'MagRoosterBeheren',
   RoosterVersturen: 'MagRoosterVersturen',
@@ -462,6 +636,16 @@ export interface GroepsportaalDagDto {
   diensten: DagdienstDto[];
 }
 
+export interface GroepsportaalDashboardDto {
+  datum: Iso;
+  stamgroepNaam: string | null;
+  kinderenInGroep: number;
+  aanwezigVandaag: number;
+  medewerkersVandaag: number;
+  ingeklokt: number;
+  observatiesOpen: number;
+}
+
 export interface PortaalMedewerkerDto {
   id: string;
   naam: string;
@@ -471,6 +655,7 @@ export interface InklokInvoer {
   medewerkerId: string;
   roosterdienstId: string | null;
   stamgroepId: string | null;
+  pincode?: string | null;
 }
 
 // === Fase 9 — actiecentrum, dashboard & instellingen ===

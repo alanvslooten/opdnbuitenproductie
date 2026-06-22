@@ -35,6 +35,12 @@ public class Urenregistratie : TenantEntiteit
     /// <summary>True zolang er nog niet is uitgeklokt.</summary>
     public bool IsOpen => Uitgeklokt is null;
 
+    /// <summary>Tijdstip (UTC) waarop een beheerder deze registratie corrigeerde (audit). Null = nooit.</summary>
+    public DateTime? GecorrigeerdOp { get; set; }
+
+    /// <summary>De gebruiker (Identity-id) die corrigeerde (audit).</summary>
+    public string? GecorrigeerdDoorUserId { get; set; }
+
     /// <summary>
     /// De gewerkte tijd geteld in hele kwartieren (afgerond op het dichtstbijzijnde
     /// kwartier). 0 zolang er nog niet is uitgeklokt. Zo blijft de registratie in

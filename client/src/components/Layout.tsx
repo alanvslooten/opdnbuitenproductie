@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { Meldingenbel } from './Meldingenbel';
 import { wisselThema, huidigThema, type Thema } from '../thema';
-import { Capabilities } from '../types';
+import { Capabilities, ROL_WEERGAVE } from '../types';
 
 // Elke link is gekoppeld aan de capability die het bijbehorende endpoint vereist
 // (ongewijzigd t.o.v. de vorige navigatie) en gegroepeerd in secties + een
@@ -12,21 +12,24 @@ type Link = { naar: string; label: string; cap: string; icon: string; sectie: st
 
 const links: Link[] = [
   { naar: '/dashboard', label: 'Dashboard', cap: Capabilities.DashboardZien, icon: 'ti-dashboard', sectie: 'Overzicht' },
-  { naar: '/planning', label: 'Weekplanning', cap: Capabilities.KinderenBeheren, icon: 'ti-calendar-week', sectie: 'Kinderen' },
-  { naar: '/dagfilter', label: 'Dagfilter', cap: Capabilities.KinderenBeheren, icon: 'ti-filter', sectie: 'Kinderen' },
+  { naar: '/planning', label: 'Weekplanning', cap: Capabilities.PlanningZien, icon: 'ti-calendar-week', sectie: 'Kinderen' },
+  { naar: '/maandplanning', label: 'Maandplanning', cap: Capabilities.PlanningZien, icon: 'ti-calendar-month', sectie: 'Kinderen' },
+  { naar: '/dagfilter', label: 'Dagfilter', cap: Capabilities.PlanningZien, icon: 'ti-filter', sectie: 'Kinderen' },
   { naar: '/kinderen', label: 'Kinderen', cap: Capabilities.KinderenBeheren, icon: 'ti-mood-kid', sectie: 'Kinderen' },
   { naar: '/observaties', label: 'Observaties', cap: Capabilities.ObservatiesVersturen, icon: 'ti-clipboard-check', sectie: 'Kinderen' },
   { naar: '/stamgroepen', label: 'Stamgroepen', cap: Capabilities.KinderenBeheren, icon: 'ti-layout-grid', sectie: 'Kinderen' },
-  { naar: '/wachtlijst', label: 'Wachtlijst', cap: Capabilities.WachtlijstBeheren, icon: 'ti-list-numbers', sectie: 'Wachtlijst' },
+  { naar: '/bkr', label: 'BKR Calculator', cap: Capabilities.DashboardZien, icon: 'ti-calculator', sectie: 'Overzicht' },
+  { naar: '/contacten', label: 'Contacten', cap: Capabilities.WachtlijstBeheren, icon: 'ti-address-book', sectie: 'Contacten' },
+  { naar: '/wachtlijst', label: 'Wachtlijst', cap: Capabilities.WachtlijstBeheren, icon: 'ti-list-numbers', sectie: 'Contacten' },
   { naar: '/rooster', label: 'Rooster', cap: Capabilities.RoosterBeheren, icon: 'ti-clock', sectie: 'Personeel' },
-  { naar: '/verlof', label: 'Verlof', cap: Capabilities.RoosterBeheren, icon: 'ti-beach', sectie: 'Personeel' },
+  { naar: '/verlof', label: 'Verlof & Ziekte', cap: Capabilities.RoosterBeheren, icon: 'ti-beach', sectie: 'Personeel' },
   { naar: '/medewerkers', label: 'Medewerkers', cap: Capabilities.MedewerkersBeheren, icon: 'ti-users', sectie: 'Personeel' },
   { naar: '/instellingen', label: 'Instellingen', cap: Capabilities.InstellingenBeheren, icon: 'ti-settings', sectie: 'Beheer' },
   { naar: '/groepsportaal', label: 'Groepsportaal', cap: Capabilities.GroepsportaalGebruiken, icon: 'ti-device-tablet', sectie: 'Portalen' },
   { naar: '/thuisportaal', label: 'Mijn portaal', cap: Capabilities.ThuisportaalGebruiken, icon: 'ti-home', sectie: 'Portalen' },
 ];
 
-const SECTIE_VOLGORDE = ['Overzicht', 'Kinderen', 'Wachtlijst', 'Personeel', 'Beheer', 'Portalen'];
+const SECTIE_VOLGORDE = ['Overzicht', 'Kinderen', 'Contacten', 'Personeel', 'Beheer', 'Portalen'];
 
 function initialen(naam: string | null): string {
   if (!naam) return '?';
@@ -35,7 +38,7 @@ function initialen(naam: string | null): string {
 }
 
 export function Layout() {
-  const { gebruikersnaam, uitloggen, heeft } = useAuth();
+  const { gebruikersnaam, rol, stamgroepNaam, weergavenaam, uitloggen, heeft } = useAuth();
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const [thema, setThemaState] = useState<Thema>(huidigThema());
@@ -43,7 +46,19 @@ export function Layout() {
   const zichtbareLinks = links.filter((l) => heeft(l.cap));
   const actief = zichtbareLinks.find((l) => location.pathname.startsWith(l.naar));
   const titel = actief?.label ?? 'KinderKompas';
-  const rolLabel = heeft(Capabilities.DashboardZien) ? 'Beheer' : 'Medewerker';
+  // Een groepsportaal-account is geen persoon maar een groep-tablet: toon de
+  // groepsnaam + "Groepsportaal". Anders de echte naam + precieze functietitel.
+  const isGroepsportaal = rol === 'Groepsportaal';
+  const naamWeergave = isGroepsportaal
+    ? (stamgroepNaam ?? 'Groepsportaal')
+    : (weergavenaam ?? gebruikersnaam ?? 'Gebruiker');
+  const rolLabel = isGroepsportaal
+    ? 'Groepsportaal'
+    : rol
+      ? (ROL_WEERGAVE[rol] ?? rol)
+      : heeft(Capabilities.DashboardZien)
+        ? 'Beheer'
+        : 'Medewerker';
 
   function toggleThema() {
     setThemaState(wisselThema());
@@ -90,9 +105,9 @@ export function Layout() {
 
         <div className="sb-bottom">
           <div className="sb-user">
-            <div className="sb-av">{initialen(gebruikersnaam)}</div>
+            <div className="sb-av">{initialen(naamWeergave)}</div>
             <div className="sb-user-info">
-              <p>{gebruikersnaam ?? 'Gebruiker'}</p>
+              <p>{naamWeergave}</p>
               <span>{rolLabel}</span>
             </div>
             <button className="sb-logout" onClick={uitloggen} title="Uitloggen">

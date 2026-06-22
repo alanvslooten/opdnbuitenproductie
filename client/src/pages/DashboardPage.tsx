@@ -201,8 +201,8 @@ export function DashboardPage() {
                 <tr>
                   <th>Groep</th>
                   <th>Kinderen</th>
-                  <th title="Vereiste pm'ers">Nodig</th>
-                  <th title="Ingeplande pm'ers">Ingepland</th>
+                  <th title="Vereiste begeleiders">Nodig</th>
+                  <th title="Ingeplande begeleiders">Ingepland</th>
                   <th>Status</th>
                 </tr>
               </thead>

@@ -15,6 +15,21 @@ namespace KinderKompas.Api.Auth;
 /// </summary>
 public static class AutorisatieBeleid
 {
+    /// <summary>
+    /// Samengestelde policy: stamgroepen (alleen-lezen referentiedata: naam + aantallen)
+    /// inzien mag iedereen die de planning, observaties of kinderen gebruikt. De
+    /// MUTATIES op stamgroepen blijven achter <see cref="Capabilities.MagKinderenBeheren"/>.
+    /// </summary>
+    public const string StamgroepenLezen = "StamgroepenLezen";
+
+    private static readonly string[] StamgroepenLeesCapabilities =
+    {
+        Capabilities.MagKinderenBeheren,
+        Capabilities.MagPlanningZien,
+        Capabilities.MagObservatiesVersturen,
+        Capabilities.MagGroepsportaalGebruiken,
+    };
+
     public static void VoegCapabilityPoliciesToe(AuthorizationOptions options)
     {
         foreach (CapabilityDefinitie def in Capabilities.Alle)
@@ -22,5 +37,9 @@ public static class AutorisatieBeleid
             options.AddPolicy(def.Sleutel, beleid =>
                 beleid.RequireClaim(KinderKompasClaims.Capability, def.Sleutel));
         }
+
+        options.AddPolicy(StamgroepenLezen, beleid =>
+            beleid.RequireAssertion(ctx => StamgroepenLeesCapabilities.Any(cap =>
+                ctx.User.HasClaim(KinderKompasClaims.Capability, cap))));
     }
 }

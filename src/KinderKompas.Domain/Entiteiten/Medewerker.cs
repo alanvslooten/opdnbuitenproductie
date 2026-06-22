@@ -32,6 +32,40 @@ public class Medewerker : TenantEntiteit
     /// <summary>Contracturen per week.</summary>
     public decimal Contracturen { get; set; }
 
+    // --- Contactgegevens (F-22) ---
+    public string? Telefoon { get; set; }
+    public string? Email { get; set; }
+    public string? NoodcontactNaam { get; set; }
+    public string? NoodcontactTelefoon { get; set; }
+
+    // --- Contract (F-22): vast vs. tijdelijk + looptijd ---
+    /// <summary>True = vast contract; false = tijdelijk.</summary>
+    public bool ContractVast { get; set; }
+    public DateOnly? Contractbegindatum { get; set; }
+    /// <summary>Einddatum bij een tijdelijk contract; null bij een vast contract.</summary>
+    public DateOnly? Contracteinddatum { get; set; }
+
+    /// <summary>
+    /// Pincode waarmee de medewerker zichzelf op het Groepsportaal-tablet verifieert bij
+    /// het in-/uitklokken (4 cijfers). Null = nog geen pincode (verificatie overgeslagen).
+    /// </summary>
+    public string? Pincode { get; set; }
+
+    /// <summary>Resterende contractmaanden t.o.v. een peildatum (tijdelijk contract), of null.</summary>
+    public int? ResterendeContractmaanden(DateOnly peildatum)
+    {
+        if (ContractVast || Contracteinddatum is not { } eind || eind < peildatum)
+        {
+            return null;
+        }
+        int maanden = (eind.Year - peildatum.Year) * 12 + eind.Month - peildatum.Month;
+        if (eind.Day < peildatum.Day)
+        {
+            maanden--;
+        }
+        return Math.Max(0, maanden);
+    }
+
     /// <summary>
     /// De vaste thuisgroep waarin deze medewerker standaard wordt ingepland.
     /// Optioneel: een flex-/invalkracht hoeft geen vaste groep te hebben.

@@ -19,7 +19,8 @@ public sealed class TokenService : ITokenService
     }
 
     public (string Token, DateTime VerlooptOpUtc) MaakAccessToken(
-        ApplicationUser gebruiker, string? rol, IReadOnlyCollection<string> capabilities)
+        ApplicationUser gebruiker, string? rol, IReadOnlyCollection<string> capabilities,
+        string? stamgroepNaam = null, string? weergavenaam = null)
     {
         DateTime nu = DateTime.UtcNow;
         DateTime verlooptOp = nu.AddMinutes(_opties.AccessTokenMinuten);
@@ -36,6 +37,20 @@ public sealed class TokenService : ITokenService
         if (gebruiker.MedewerkerId is { } medewerkerId)
         {
             claims.Add(new Claim(KinderKompasClaims.MedewerkerId, medewerkerId.ToString()));
+        }
+
+        // Stamgroep-scope voor een Groepsportaal-account (één tablet per groep).
+        if (gebruiker.StamgroepId is { } stamgroepId)
+        {
+            claims.Add(new Claim(KinderKompasClaims.StamgroepId, stamgroepId.ToString()));
+        }
+        if (!string.IsNullOrWhiteSpace(stamgroepNaam))
+        {
+            claims.Add(new Claim(KinderKompasClaims.StamgroepNaam, stamgroepNaam));
+        }
+        if (!string.IsNullOrWhiteSpace(weergavenaam))
+        {
+            claims.Add(new Claim(KinderKompasClaims.Weergavenaam, weergavenaam));
         }
 
         if (!string.IsNullOrWhiteSpace(rol))

@@ -11,6 +11,12 @@ public sealed record WeekplanningDto(
     DateOnly WeekBegin,
     IReadOnlyList<StamgroepWeekDto> Stamgroepen);
 
+/// <summary>De maandplanning (alleen-lezen): alle weken die de maand raken.</summary>
+public sealed record MaandPlanningDto(
+    int Jaar,
+    int Maand,
+    IReadOnlyList<WeekplanningDto> Weken);
+
 public sealed record StamgroepWeekDto(
     Guid StamgroepId,
     string Naam,
@@ -22,7 +28,19 @@ public sealed record DagPlanningDto(
     Weekdag Dag,
     bool IsSchoolvakantie,
     IReadOnlyList<AanwezigKindDto> Kinderen,
-    BkrDagDto Bkr);
+    BkrDagDto Bkr,
+    IReadOnlyList<PlanningBegeleiderDto> Begeleiders);
+
+/// <summary>Een ingeplande begeleider (medewerker) op een dag, uit het verstuurde rooster.</summary>
+public sealed record PlanningBegeleiderDto(Guid MedewerkerId, string Naam, string? Taakomschrijving);
+
+/// <summary>
+/// Antwoord van het dagfilter: de aanwezige kinderen én de ingeplande begeleiders
+/// (uit het verstuurde rooster) op die dag.
+/// </summary>
+public sealed record DagFilterDto(
+    IReadOnlyList<AanwezigKindDto> Kinderen,
+    IReadOnlyList<PlanningBegeleiderDto> Begeleiders);
 
 /// <summary>Een aanwezig kind in de planning. Bevat bewust GEEN privacygevoelige oudergegevens.</summary>
 public sealed record AanwezigKindDto(

@@ -5,12 +5,17 @@ import type { AuthResponse } from '../types';
 interface MeRespons {
   gebruikersnaam: string | null;
   rollen: string[];
+  stamgroepNaam: string | null;
+  weergavenaam: string | null;
   capabilities: string[];
 }
 
 interface AuthState {
   ingelogd: boolean;
   gebruikersnaam: string | null;
+  rol: string | null;
+  stamgroepNaam: string | null;
+  weergavenaam: string | null;
   capabilities: string[];
 }
 
@@ -25,7 +30,14 @@ interface AuthContextWaarde extends AuthState {
 
 const AuthContext = createContext<AuthContextWaarde | null>(null);
 
-const LEEG: AuthState = { ingelogd: false, gebruikersnaam: null, capabilities: [] };
+const LEEG: AuthState = {
+  ingelogd: false,
+  gebruikersnaam: null,
+  rol: null,
+  stamgroepNaam: null,
+  weergavenaam: null,
+  capabilities: [],
+};
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>(LEEG);
@@ -41,7 +53,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     api<MeRespons>('/api/auth/me')
       .then((me) =>
-        setState({ ingelogd: true, gebruikersnaam: me.gebruikersnaam, capabilities: me.capabilities }),
+        setState({
+          ingelogd: true,
+          gebruikersnaam: me.gebruikersnaam,
+          rol: me.rollen[0] ?? null,
+          stamgroepNaam: me.stamgroepNaam,
+          weergavenaam: me.weergavenaam,
+          capabilities: me.capabilities,
+        }),
       )
       .catch(() => {
         zetTokens(null);
@@ -50,12 +69,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setKlaar(true));
   }, []);
 
-  function pasResponsToe(resp: AuthResponse) {
+  function pasResponsToe(resp: AuthResponse, gebruikersnaam: string) {
     if (!resp.accessToken || !resp.refreshToken) {
       throw new Error('Geen tokens ontvangen.');
     }
     zetTokens({ accessToken: resp.accessToken, refreshToken: resp.refreshToken });
-    setState({ ingelogd: true, gebruikersnaam: null, capabilities: resp.capabilities });
+    // De ingetypte gebruikersnaam meteen tonen (de login-respons bevat hem niet),
+    // zodat de zijbalk direct de juiste naam + rol toont i.p.v. "Gebruiker".
+    setState({
+      ingelogd: true,
+      gebruikersnaam,
+      rol: resp.rol,
+      stamgroepNaam: resp.stamgroepNaam,
+      weergavenaam: resp.weergavenaam,
+      capabilities: resp.capabilities,
+    });
   }
 
   const waarde = useMemo<AuthContextWaarde>(
@@ -69,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           body: JSON.stringify({ gebruikersnaam, wachtwoord }),
         });
         if (resp.vereistTweeFactor) return true;
-        pasResponsToe(resp);
+        pasResponsToe(resp, gebruikersnaam);
         return false;
       },
       async login2fa(gebruikersnaam, wachtwoord, code) {
@@ -77,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           method: 'POST',
           body: JSON.stringify({ gebruikersnaam, wachtwoord, code }),
         });
-        pasResponsToe(resp);
+        pasResponsToe(resp, gebruikersnaam);
       },
       uitloggen() {
         zetTokens(null);

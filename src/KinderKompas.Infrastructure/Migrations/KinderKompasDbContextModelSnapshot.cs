@@ -70,6 +70,14 @@ namespace KinderKompas.Infrastructure.Migrations
                         },
                         new
                         {
+                            Id = new Guid("b93b92f3-6b02-630e-dda7-8c24442412b1"),
+                            AangemaaktOp = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            GewijzigdOp = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Omschrijving = "Weekplanning en dagfilter inzien (alleen-lezen)",
+                            Sleutel = "MagPlanningZien"
+                        },
+                        new
+                        {
                             Id = new Guid("e904ca58-9b3a-74e1-b988-6d927c70b5b2"),
                             AangemaaktOp = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             GewijzigdOp = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -142,6 +150,53 @@ namespace KinderKompas.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("KinderKompas.Domain.Entiteiten.Contact", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("AangemaaktOp")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("Aantekeningen")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("Achternaam")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime>("GewijzigdOp")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<bool>("IsIntern")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("OrganisatieId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Telefoon")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("Voornaam")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganisatieId", "Achternaam");
+
+                    b.ToTable("Contacten");
+                });
+
             modelBuilder.Entity("KinderKompas.Domain.Entiteiten.Kind", b =>
                 {
                     b.Property<Guid>("Id")
@@ -155,6 +210,9 @@ namespace KinderKompas.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<Guid?>("ContactId")
+                        .HasColumnType("uuid");
 
                     b.Property<int>("Contracttype")
                         .HasColumnType("integer");
@@ -190,6 +248,8 @@ namespace KinderKompas.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ContactId");
+
                     b.HasIndex("MentorId");
 
                     b.HasIndex("OrganisatieId");
@@ -216,9 +276,22 @@ namespace KinderKompas.Infrastructure.Migrations
                     b.Property<int>("Beschikbaarheidsdagen")
                         .HasColumnType("integer");
 
+                    b.Property<bool>("ContractVast")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateOnly?>("Contractbegindatum")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("Contracteinddatum")
+                        .HasColumnType("date");
+
                     b.Property<decimal>("Contracturen")
                         .HasPrecision(5, 2)
                         .HasColumnType("numeric(5,2)");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<DateTime>("GewijzigdOp")
                         .HasColumnType("timestamp without time zone");
@@ -227,11 +300,27 @@ namespace KinderKompas.Infrastructure.Migrations
                         .HasMaxLength(450)
                         .HasColumnType("character varying(450)");
 
+                    b.Property<string>("NoodcontactNaam")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("NoodcontactTelefoon")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
                     b.Property<Guid>("OrganisatieId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Pincode")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
                     b.Property<int>("Rol")
                         .HasColumnType("integer");
+
+                    b.Property<string>("Telefoon")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
 
                     b.Property<Guid?>("VasteStamgroepId")
                         .HasColumnType("uuid");
@@ -510,6 +599,15 @@ namespace KinderKompas.Infrastructure.Migrations
                         },
                         new
                         {
+                            Id = new Guid("20a2771f-6db5-b709-015e-777298a61aa6"),
+                            AangemaaktOp = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CapabilityId = new Guid("b93b92f3-6b02-630e-dda7-8c24442412b1"),
+                            GewijzigdOp = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            OrganisatieId = new Guid("0a000000-0000-0000-0000-000000000001"),
+                            Rol = 0
+                        },
+                        new
+                        {
                             Id = new Guid("73078a48-aba9-4a1d-8698-648d0c815877"),
                             AangemaaktOp = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             CapabilityId = new Guid("e904ca58-9b3a-74e1-b988-6d927c70b5b2"),
@@ -591,6 +689,15 @@ namespace KinderKompas.Infrastructure.Migrations
                         },
                         new
                         {
+                            Id = new Guid("562b968a-d2f6-9128-ebd2-7ad756061ba9"),
+                            AangemaaktOp = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CapabilityId = new Guid("b93b92f3-6b02-630e-dda7-8c24442412b1"),
+                            GewijzigdOp = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            OrganisatieId = new Guid("0a000000-0000-0000-0000-000000000001"),
+                            Rol = 1
+                        },
+                        new
+                        {
                             Id = new Guid("85cc444f-b664-1442-09c0-9cba249f8327"),
                             AangemaaktOp = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             CapabilityId = new Guid("e904ca58-9b3a-74e1-b988-6d927c70b5b2"),
@@ -654,18 +761,9 @@ namespace KinderKompas.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = new Guid("c16760ac-c001-6449-aa62-437ea5c2ae74"),
+                            Id = new Guid("a599e2b6-341a-1976-ec59-385bd3d86304"),
                             AangemaaktOp = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CapabilityId = new Guid("73b5d451-8c90-336e-a5c4-18449b7533d3"),
-                            GewijzigdOp = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            OrganisatieId = new Guid("0a000000-0000-0000-0000-000000000001"),
-                            Rol = 2
-                        },
-                        new
-                        {
-                            Id = new Guid("5cd31be3-00a0-68fa-2e95-25ae6c52c852"),
-                            AangemaaktOp = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CapabilityId = new Guid("e904ca58-9b3a-74e1-b988-6d927c70b5b2"),
+                            CapabilityId = new Guid("b93b92f3-6b02-630e-dda7-8c24442412b1"),
                             GewijzigdOp = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             OrganisatieId = new Guid("0a000000-0000-0000-0000-000000000001"),
                             Rol = 2
@@ -684,15 +782,6 @@ namespace KinderKompas.Infrastructure.Migrations
                             Id = new Guid("ee1fe437-9a79-ddb4-30a3-ccd4526b9866"),
                             AangemaaktOp = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             CapabilityId = new Guid("fe90a764-2947-895f-6ba8-2184df6e59c5"),
-                            GewijzigdOp = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            OrganisatieId = new Guid("0a000000-0000-0000-0000-000000000001"),
-                            Rol = 2
-                        },
-                        new
-                        {
-                            Id = new Guid("ff2fea9e-9489-1dd6-74cb-c2e447f8ad92"),
-                            AangemaaktOp = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CapabilityId = new Guid("d7b7e8f0-c6e1-61b3-0a88-0ecf6242600b"),
                             GewijzigdOp = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             OrganisatieId = new Guid("0a000000-0000-0000-0000-000000000001"),
                             Rol = 2
@@ -735,9 +824,9 @@ namespace KinderKompas.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = new Guid("c2dcaad8-24e7-5675-a3de-6e32ebf9c98b"),
+                            Id = new Guid("93ebd198-fdd3-59b3-16db-a6232f25e583"),
                             AangemaaktOp = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CapabilityId = new Guid("73b5d451-8c90-336e-a5c4-18449b7533d3"),
+                            CapabilityId = new Guid("b93b92f3-6b02-630e-dda7-8c24442412b1"),
                             GewijzigdOp = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             OrganisatieId = new Guid("0a000000-0000-0000-0000-000000000001"),
                             Rol = 4
@@ -760,6 +849,43 @@ namespace KinderKompas.Infrastructure.Migrations
                             OrganisatieId = new Guid("0a000000-0000-0000-0000-000000000001"),
                             Rol = 4
                         });
+                });
+
+            modelBuilder.Entity("KinderKompas.Domain.Entiteiten.Rondleiding", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("AangemaaktOp")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<Guid>("ContactId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateOnly>("Datum")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime>("GewijzigdOp")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("Notitie")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<Guid>("OrganisatieId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ContactId");
+
+                    b.HasIndex("OrganisatieId");
+
+                    b.ToTable("Rondleidingen");
                 });
 
             modelBuilder.Entity("KinderKompas.Domain.Entiteiten.Roosterdienst", b =>
@@ -937,6 +1063,12 @@ namespace KinderKompas.Infrastructure.Migrations
 
                     b.Property<DateOnly>("Datum")
                         .HasColumnType("date");
+
+                    b.Property<string>("GecorrigeerdDoorUserId")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("GecorrigeerdOp")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<DateTime>("GewijzigdOp")
                         .HasColumnType("timestamp without time zone");
@@ -1154,6 +1286,9 @@ namespace KinderKompas.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<Guid?>("ContactId")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("Contracttype")
                         .HasColumnType("integer");
 
@@ -1200,6 +1335,8 @@ namespace KinderKompas.Infrastructure.Migrations
                         .HasColumnType("character varying(100)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ContactId");
 
                     b.HasIndex("GewensteStamgroepId");
 
@@ -1291,6 +1428,9 @@ namespace KinderKompas.Infrastructure.Migrations
 
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("text");
+
+                    b.Property<Guid?>("StamgroepId")
+                        .HasColumnType("uuid");
 
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("boolean");
@@ -1485,8 +1625,24 @@ namespace KinderKompas.Infrastructure.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("KinderKompas.Domain.Entiteiten.Contact", b =>
+                {
+                    b.HasOne("KinderKompas.Domain.Entiteiten.Organisatie", "Organisatie")
+                        .WithMany()
+                        .HasForeignKey("OrganisatieId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Organisatie");
+                });
+
             modelBuilder.Entity("KinderKompas.Domain.Entiteiten.Kind", b =>
                 {
+                    b.HasOne("KinderKompas.Domain.Entiteiten.Contact", "Contact")
+                        .WithMany("Kinderen")
+                        .HasForeignKey("ContactId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("KinderKompas.Domain.Entiteiten.Medewerker", "Mentor")
                         .WithMany()
                         .HasForeignKey("MentorId");
@@ -1503,42 +1659,41 @@ namespace KinderKompas.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.OwnsOne("KinderKompas.Domain.ValueObjects.Oudercontact", "Oudercontact", b1 =>
+                    b.OwnsMany("KinderKompas.Domain.ValueObjects.Oudercontact", "Oudercontacten", b1 =>
                         {
-                            b1.Property<Guid>("KindId")
-                                .HasColumnType("uuid");
+                            b1.Property<Guid>("KindId");
+
+                            b1.Property<int>("__synthesizedOrdinal")
+                                .ValueGeneratedOnAdd();
 
                             b1.Property<string>("Email")
-                                .IsRequired()
-                                .HasMaxLength(200)
-                                .HasColumnType("character varying(200)")
-                                .HasColumnName("Oudercontact_Email");
+                                .IsRequired();
 
                             b1.Property<string>("Naam")
-                                .IsRequired()
-                                .HasMaxLength(200)
-                                .HasColumnType("character varying(200)")
-                                .HasColumnName("Oudercontact_Naam");
+                                .IsRequired();
 
                             b1.Property<string>("Telefoon")
-                                .IsRequired()
-                                .HasMaxLength(30)
-                                .HasColumnType("character varying(30)")
-                                .HasColumnName("Oudercontact_Telefoon");
+                                .IsRequired();
 
-                            b1.HasKey("KindId");
+                            b1.HasKey("KindId", "__synthesizedOrdinal");
 
                             b1.ToTable("Kinderen");
+
+                            b1
+                                .ToJson("Oudercontacten")
+                                .HasColumnType("jsonb");
 
                             b1.WithOwner()
                                 .HasForeignKey("KindId");
                         });
 
+                    b.Navigation("Contact");
+
                     b.Navigation("Mentor");
 
                     b.Navigation("Organisatie");
 
-                    b.Navigation("Oudercontact");
+                    b.Navigation("Oudercontacten");
 
                     b.Navigation("Stamgroep");
                 });
@@ -1581,6 +1736,25 @@ namespace KinderKompas.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Capability");
+                });
+
+            modelBuilder.Entity("KinderKompas.Domain.Entiteiten.Rondleiding", b =>
+                {
+                    b.HasOne("KinderKompas.Domain.Entiteiten.Contact", "Contact")
+                        .WithMany("Rondleidingen")
+                        .HasForeignKey("ContactId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("KinderKompas.Domain.Entiteiten.Organisatie", "Organisatie")
+                        .WithMany()
+                        .HasForeignKey("OrganisatieId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Contact");
+
+                    b.Navigation("Organisatie");
                 });
 
             modelBuilder.Entity("KinderKompas.Domain.Entiteiten.Roosterdienst", b =>
@@ -1711,6 +1885,11 @@ namespace KinderKompas.Infrastructure.Migrations
 
             modelBuilder.Entity("KinderKompas.Domain.Entiteiten.WachtlijstInschrijving", b =>
                 {
+                    b.HasOne("KinderKompas.Domain.Entiteiten.Contact", "Contact")
+                        .WithMany("Inschrijvingen")
+                        .HasForeignKey("ContactId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("KinderKompas.Domain.Entiteiten.Stamgroep", "GewensteStamgroep")
                         .WithMany()
                         .HasForeignKey("GewensteStamgroepId")
@@ -1752,6 +1931,8 @@ namespace KinderKompas.Infrastructure.Migrations
                             b1.WithOwner()
                                 .HasForeignKey("WachtlijstInschrijvingId");
                         });
+
+                    b.Navigation("Contact");
 
                     b.Navigation("GewensteStamgroep");
 
@@ -1836,6 +2017,15 @@ namespace KinderKompas.Infrastructure.Migrations
             modelBuilder.Entity("KinderKompas.Domain.Entiteiten.Capability", b =>
                 {
                     b.Navigation("RolCapabilities");
+                });
+
+            modelBuilder.Entity("KinderKompas.Domain.Entiteiten.Contact", b =>
+                {
+                    b.Navigation("Inschrijvingen");
+
+                    b.Navigation("Kinderen");
+
+                    b.Navigation("Rondleidingen");
                 });
 
             modelBuilder.Entity("KinderKompas.Domain.Entiteiten.Organisatie", b =>

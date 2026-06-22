@@ -21,6 +21,7 @@ public static class StandaardRolCapabilities
         {
             Capabilities.MagOudergegevensZien,
             Capabilities.MagKinderenBeheren,
+            Capabilities.MagPlanningZien,
             Capabilities.MagWachtlijstBeheren,
             Capabilities.MagRoosterBeheren,
             Capabilities.MagRoosterVersturen,
@@ -33,6 +34,7 @@ public static class StandaardRolCapabilities
         [Rol.Hulpbeheerder] = new[]
         {
             Capabilities.MagKinderenBeheren,
+            Capabilities.MagPlanningZien,
             Capabilities.MagWachtlijstBeheren,
             Capabilities.MagRoosterBeheren,
             Capabilities.MagRoosterVersturen,
@@ -41,13 +43,13 @@ public static class StandaardRolCapabilities
             Capabilities.MagDashboardZien,
             Capabilities.MagThuisportaalGebruiken,
         },
+        // Senior werkt op de groep mee: planning inzien + observaties, maar bewust
+        // GEEN dashboard, kindbeheer, stamgroepen of wachtlijst (feedback Erik V2).
         [Rol.Senior] = new[]
         {
-            Capabilities.MagKinderenBeheren,
-            Capabilities.MagWachtlijstBeheren,
+            Capabilities.MagPlanningZien,
             Capabilities.MagRoosterVersturen,
             Capabilities.MagObservatiesVersturen,
-            Capabilities.MagDashboardZien,
             Capabilities.MagThuisportaalGebruiken,
         },
         [Rol.Junior] = new[]
@@ -56,10 +58,13 @@ public static class StandaardRolCapabilities
             Capabilities.MagThuisportaalGebruiken,
         },
         // Gedeeld tablet-account op locatie: geen MedewerkerId, dus geen thuis-portaal.
+        // Tablet op locatie: kinderen ALLEEN-LEZEN (geen MagKinderenBeheren → geen
+        // aanmaken/bewerken/verwijderen en geen stamgroepen-beheer, feedback Erik V2).
+        // Lezen van kinderen + oudergegevens loopt via het groepsportaal-endpoint.
         [Rol.Groepsportaal] = new[]
         {
             Capabilities.MagOudergegevensZien,
-            Capabilities.MagKinderenBeheren,
+            Capabilities.MagPlanningZien,
             Capabilities.MagObservatiesVersturen,
             Capabilities.MagGroepsportaalGebruiken,
         },

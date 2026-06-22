@@ -9,6 +9,10 @@ export function StamgroepenPage() {
   const [naam, setNaam] = useState('');
   const [maxKinderen, setMaxKinderen] = useState(12);
   const [fout, setFout] = useState<string | null>(null);
+  // Verwijder-bevestiging: doelgroep + ingevoerd wachtwoord.
+  const [doel, setDoel] = useState<{ id: string; naam: string } | null>(null);
+  const [wachtwoord, setWachtwoord] = useState('');
+  const [verwijderFout, setVerwijderFout] = useState<string | null>(null);
 
   async function voegToe(e: FormEvent) {
     e.preventDefault();
@@ -22,13 +26,21 @@ export function StamgroepenPage() {
     }
   }
 
-  async function verwijder(id: string, naam: string) {
-    setFout(null);
-    if (!confirm(`Stamgroep "${naam}" verwijderen?`)) return;
+  function startVerwijderen(id: string, groepNaam: string) {
+    setVerwijderFout(null);
+    setWachtwoord('');
+    setDoel({ id, naam: groepNaam });
+  }
+
+  async function bevestigVerwijderen(e: FormEvent) {
+    e.preventDefault();
+    if (!doel) return;
+    setVerwijderFout(null);
     try {
-      await verwijderen.mutateAsync(id);
+      await verwijderen.mutateAsync({ id: doel.id, wachtwoord });
+      setDoel(null);
     } catch (err) {
-      setFout(err instanceof ApiFout ? err.message : 'Verwijderen mislukt.');
+      setVerwijderFout(err instanceof ApiFout ? err.message : 'Verwijderen mislukt.');
     }
   }
 
@@ -102,7 +114,7 @@ export function StamgroepenPage() {
                   </span>
                 </td>
                 <td style={{ textAlign: 'right' }}>
-                  <button onClick={() => verwijder(g.id, g.naam)} className="btn btn-rose btn-xs">
+                  <button onClick={() => startVerwijderen(g.id, g.naam)} className="btn btn-rose btn-xs">
                     <i className="ti ti-trash" />
                   </button>
                 </td>
@@ -118,6 +130,51 @@ export function StamgroepenPage() {
           </tbody>
         </table>
       </div>
+
+      {doel && (
+        <div className="overlay on" onClick={() => setDoel(null)}>
+          <form className="modal" style={{ maxWidth: 420 }} onClick={(e) => e.stopPropagation()} onSubmit={bevestigVerwijderen}>
+            <div className="modal-h">
+              <h2>
+                <i className="ti ti-alert-triangle" style={{ color: 'var(--rose)' }} /> Stamgroep verwijderen
+              </h2>
+              <button type="button" className="xbtn" onClick={() => setDoel(null)}>
+                <i className="ti ti-x" />
+              </button>
+            </div>
+            <div className="modal-b">
+              <p style={{ fontSize: 13, marginBottom: 12 }}>
+                Weet je zeker dat je <strong>{doel.naam}</strong> wilt verwijderen? Dit kan niet ongedaan
+                worden gemaakt. Bevestig met je wachtwoord.
+              </p>
+              {verwijderFout && (
+                <div className="alert alert-bad" style={{ marginBottom: 12 }}>
+                  <i className="ti ti-alert-circle" />
+                  <span>{verwijderFout}</span>
+                </div>
+              )}
+              <div className="fld" style={{ marginBottom: 0 }}>
+                <label>Wachtwoord</label>
+                <input
+                  type="password"
+                  autoFocus
+                  value={wachtwoord}
+                  onChange={(e) => setWachtwoord(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+            <div className="modal-f" style={{ position: 'static' }}>
+              <button type="button" onClick={() => setDoel(null)} className="btn btn-outline btn-sm">
+                Annuleren
+              </button>
+              <button type="submit" disabled={verwijderen.isPending} className="btn btn-rose btn-sm">
+                <i className="ti ti-trash" /> Definitief verwijderen
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

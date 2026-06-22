@@ -124,6 +124,26 @@ public static class BkrCalculator
     }
 
     /// <summary>
+    /// Het vereiste aantal pm'ers voor <paramref name="aantalKinderen"/> kinderen van
+    /// ÉÉN leeftijdscategorie, puur op basis van de ratio uit Tabel 1 (naar boven
+    /// afgerond). Anders dan <see cref="Bereken"/> kent deze methode GEEN groepsmaximum:
+    /// het is de locatie-/snelrekenvariant ("hoeveel pm'ers heb ik nodig voor zoveel
+    /// kinderen van deze leeftijd?"), waarbij dezelfde ratio blijft gelden ongeacht over
+    /// hoeveel fysieke stamgroepen je ze verdeelt. Zo blijven de wettelijke ratio's op
+    /// één plek in het domein staan en hoeft de UI/rekentool ze niet te dupliceren.
+    /// </summary>
+    public static int VereisteVoorEnkeleLeeftijd(Leeftijdsgroep groep, int aantalKinderen)
+    {
+        if (aantalKinderen < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(aantalKinderen),
+                "Een aantal kinderen kan niet negatief zijn.");
+        }
+
+        return aantalKinderen == 0 ? 0 : CeilDeling(aantalKinderen, RatioVan(groep));
+    }
+
+    /// <summary>
     /// Drie-uursregeling: maximaal 3 uur per dag mag er minder personeel aanwezig zijn
     /// dan de strikte BKR vereist (typisch begin/eind van de dag en tijdens de lunch).
     /// Tijdens die afwijkuren geldt alleen de harde ondergrens: er moet ALTIJD minimaal

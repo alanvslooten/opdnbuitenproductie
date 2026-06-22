@@ -42,6 +42,8 @@ public class KinderKompasDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Ziekmelding> Ziekmeldingen => Set<Ziekmelding>();
     public DbSet<Verlofsaldo> Verlofsaldi => Set<Verlofsaldo>();
     public DbSet<WachtlijstInschrijving> Wachtlijstinschrijvingen => Set<WachtlijstInschrijving>();
+    public DbSet<Contact> Contacten => Set<Contact>();
+    public DbSet<Rondleiding> Rondleidingen => Set<Rondleiding>();
     public DbSet<Voorstel> Voorstellen => Set<Voorstel>();
     public DbSet<VoorstelDag> VoorstelDagen => Set<VoorstelDag>();
     public DbSet<Observatie> Observaties => Set<Observatie>();
@@ -80,14 +82,15 @@ public class KinderKompasDbContext : IdentityDbContext<ApplicationUser>
             b.Property(k => k.Voornaam).HasMaxLength(100).IsRequired();
             b.Property(k => k.Achternaam).HasMaxLength(100).IsRequired();
 
-            // Oudercontact als owned value object: aparte kolommen in de Kind-tabel,
-            // geen eigen identiteit. Optioneel (nullable).
-            b.OwnsOne(k => k.Oudercontact, oc =>
-            {
-                oc.Property(o => o.Naam).HasColumnName("Oudercontact_Naam").HasMaxLength(200);
-                oc.Property(o => o.Telefoon).HasColumnName("Oudercontact_Telefoon").HasMaxLength(30);
-                oc.Property(o => o.Email).HasColumnName("Oudercontact_Email").HasMaxLength(200);
-            });
+            // Oudercontacten: lijst van owned value objects, opgeslagen als één JSON-
+            // kolom ("Oudercontacten", jsonb). Zo kan een kind meerdere contacten hebben
+            // zonder aparte tabel. Geen eigen identiteit; zichtbaarheid via projectie.
+            b.OwnsMany(k => k.Oudercontacten, oc => oc.ToJson());
+
+            // Optionele koppeling naar het CRM-contact (gezin); SetNull zodat het
+            // verwijderen van een contact het kind niet meeneemt.
+            b.HasOne(k => k.Contact).WithMany(c => c.Kinderen)
+                .HasForeignKey(k => k.ContactId).OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<Medewerker>(b =>
@@ -96,6 +99,11 @@ public class KinderKompasDbContext : IdentityDbContext<ApplicationUser>
             b.Property(m => m.Achternaam).HasMaxLength(100).IsRequired();
             b.Property(m => m.Contracturen).HasPrecision(5, 2);
             b.Property(m => m.IdentityUserId).HasMaxLength(450);
+            b.Property(m => m.Telefoon).HasMaxLength(30);
+            b.Property(m => m.Email).HasMaxLength(200);
+            b.Property(m => m.NoodcontactNaam).HasMaxLength(200);
+            b.Property(m => m.NoodcontactTelefoon).HasMaxLength(30);
+            b.Property(m => m.Pincode).HasMaxLength(10);
 
             // Vaste thuisgroep: optionele relatie. Restrict zodat een groep niet kan
             // verdwijnen terwijl er medewerkers aan hangen.
@@ -210,8 +218,34 @@ public class KinderKompasDbContext : IdentityDbContext<ApplicationUser>
             b.HasMany(w => w.Voorstellen).WithOne(v => v.WachtlijstInschrijving!)
                 .HasForeignKey(v => v.WachtlijstInschrijvingId).OnDelete(DeleteBehavior.Cascade);
 
+            // Optionele koppeling naar het CRM-contact (gezin); SetNull bij verwijderen.
+            b.HasOne(w => w.Contact).WithMany(c => c.Inschrijvingen)
+                .HasForeignKey(w => w.ContactId).OnDelete(DeleteBehavior.SetNull);
+
             // De wachtlijst wordt gefilterd op status (wachtend/geplaatst); index helpt.
             b.HasIndex(w => new { w.OrganisatieId, w.Status });
+        });
+
+        modelBuilder.Entity<Contact>(b =>
+        {
+            b.Property(c => c.Voornaam).HasMaxLength(100).IsRequired();
+            b.Property(c => c.Achternaam).HasMaxLength(100).IsRequired();
+            b.Property(c => c.Telefoon).HasMaxLength(30);
+            b.Property(c => c.Email).HasMaxLength(200);
+            b.Property(c => c.Aantekeningen).HasMaxLength(2000);
+
+            b.HasOne(c => c.Organisatie).WithMany()
+                .HasForeignKey(c => c.OrganisatieId).OnDelete(DeleteBehavior.Restrict);
+            b.HasMany(c => c.Rondleidingen).WithOne(r => r.Contact!)
+                .HasForeignKey(r => r.ContactId).OnDelete(DeleteBehavior.Cascade);
+
+            b.HasIndex(c => new { c.OrganisatieId, c.Achternaam });
+        });
+
+        modelBuilder.Entity<Rondleiding>(b =>
+        {
+            b.Property(r => r.Notitie).HasMaxLength(1000);
+            b.HasIndex(r => r.ContactId);
         });
 
         modelBuilder.Entity<Voorstel>(b =>
@@ -298,6 +332,8 @@ public class KinderKompasDbContext : IdentityDbContext<ApplicationUser>
         modelBuilder.Entity<Ziekmelding>().HasQueryFilter(e => e.OrganisatieId == _tenantProvider.CurrentOrganisatieId);
         modelBuilder.Entity<Verlofsaldo>().HasQueryFilter(e => e.OrganisatieId == _tenantProvider.CurrentOrganisatieId);
         modelBuilder.Entity<WachtlijstInschrijving>().HasQueryFilter(e => e.OrganisatieId == _tenantProvider.CurrentOrganisatieId);
+        modelBuilder.Entity<Contact>().HasQueryFilter(e => e.OrganisatieId == _tenantProvider.CurrentOrganisatieId);
+        modelBuilder.Entity<Rondleiding>().HasQueryFilter(e => e.OrganisatieId == _tenantProvider.CurrentOrganisatieId);
         modelBuilder.Entity<Voorstel>().HasQueryFilter(e => e.OrganisatieId == _tenantProvider.CurrentOrganisatieId);
         modelBuilder.Entity<VoorstelDag>().HasQueryFilter(e => e.OrganisatieId == _tenantProvider.CurrentOrganisatieId);
         modelBuilder.Entity<Observatie>().HasQueryFilter(e => e.OrganisatieId == _tenantProvider.CurrentOrganisatieId);

@@ -60,7 +60,12 @@ public sealed class IdentityDataSeeder
             Weekdag.Maandag | Weekdag.Dinsdag | Weekdag.Woensdag, Weekdag.Donderdag | Weekdag.Vrijdag, SeedConstanten.StamgroepBengeltjesId),
         new("jasper", "jasper@opdnbuiten.nl", "Junior!2026", Rol.Junior, false, "Jasper", "Junior",
             Weekdag.Maandag | Weekdag.Dinsdag | Weekdag.Woensdag, Weekdag.Donderdag, SeedConstanten.StamgroepBoefjesId),
-        new("groepsportaal", "portaal@opdnbuiten.nl", "Portaal!2026", Rol.Groepsportaal, true, null, null),
+        // Eén Groepsportaal-account per stamgroep (eigen tablet): alle portaal-data is
+        // tot die groep beperkt via ApplicationUser.StamgroepId (feedback Erik V2).
+        new("groepsportaal-bengeltjes", "bengeltjes@opdnbuiten.nl", "Portaal!2026", Rol.Groepsportaal, true,
+            null, null, VasteStamgroepId: SeedConstanten.StamgroepBengeltjesId),
+        new("groepsportaal-boefjes", "boefjes@opdnbuiten.nl", "Portaal!2026", Rol.Groepsportaal, true,
+            null, null, VasteStamgroepId: SeedConstanten.StamgroepBoefjesId),
     };
 
     public async Task SeedAsync(bool isDevelopment, bool tweeFactorVerplichten, CancellationToken ct = default)
@@ -172,7 +177,11 @@ public sealed class IdentityDataSeeder
             Contracttype = Contracttype.Weken49,
             GewensteOpvangdagen = Weekdag.Maandag | Weekdag.Dinsdag,
             MentorId = mentor?.Id,
-            Oudercontact = new Oudercontact("Mark de Vries", "0612345678", "mark@example.nl"),
+            Oudercontacten =
+            {
+                new Oudercontact("Mark de Vries", "0612345678", "mark@example.nl"),
+                new Oudercontact("Petra de Vries", "0698765432", "petra@example.nl"),
+            },
         });
         await _db.SaveChangesAsync(ct);
     }
@@ -222,6 +231,9 @@ public sealed class IdentityDataSeeder
             EmailConfirmed = true,
             OrganisatieId = SeedConstanten.OrganisatieId,
             MedewerkerId = medewerkerId,
+            // Een Groepsportaal-account hangt vast aan zijn stamgroep; persoonlijke
+            // accounts niet (die scopen via hun eigen medewerker/portaal).
+            StamgroepId = account.Rol == Rol.Groepsportaal ? account.VasteStamgroepId : null,
         };
 
         IdentityResult aangemaakt = await _users.CreateAsync(gebruiker, account.Wachtwoord);

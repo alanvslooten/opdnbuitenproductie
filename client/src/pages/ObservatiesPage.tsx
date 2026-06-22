@@ -9,7 +9,7 @@ import {
   type KindObservatieschemaDto,
   type ObservatiemomentDto,
 } from '../api/observaties';
-import { korteDatum } from '../datum';
+import { datumNl } from '../datum';
 
 const STATUS_STIJL: Record<number, { label: string; klasse: string }> = {
   [ObservatieStatus.NogNietAanDeBeurt]: { label: 'Nog niet', klasse: 'b-gray' },
@@ -22,11 +22,27 @@ const BANNER = 'https://images.unsplash.com/photo-1630476504743-a4d342f88760?q=8
 
 export function ObservatiesPage() {
   const [stamgroepFilter, setStamgroepFilter] = useState('');
+  const [zoek, setZoek] = useState('');
   const { data: groepen } = useStamgroepen();
   const { data, isLoading, error } = useObservatieOverzicht(stamgroepFilter || undefined);
   const [fout, setFout] = useState<string | null>(null);
 
   const groepNaam = (id: string) => groepen?.find((g) => g.id === id)?.naam ?? '—';
+
+  const term = zoek.trim().toLowerCase();
+  const zichtbaar = (data ?? []).filter(
+    (k) => !term || `${k.voornaam} ${k.achternaam}`.toLowerCase().includes(term),
+  );
+
+  // Totaaloverzicht over de zichtbare kinderen (widget bovenaan, feedback Erik).
+  const totaal = zichtbaar.reduce(
+    (acc, k) => ({
+      overschreden: acc.overschreden + k.aantalOverschreden,
+      binnenkort: acc.binnenkort + k.aantalBinnenkort,
+      afgerond: acc.afgerond + k.aantalAfgerond,
+    }),
+    { overschreden: 0, binnenkort: 0, afgerond: 0 },
+  );
 
   return (
     <div className="view">
@@ -45,6 +61,15 @@ export function ObservatiesPage() {
       <div className="ph">
         <div />
         <div className="ph-actions">
+          <div className="search-box" style={{ minWidth: 200 }}>
+            <i className="ti ti-search" />
+            <input
+              type="text"
+              placeholder="Zoek op naam…"
+              value={zoek}
+              onChange={(e) => setZoek(e.target.value)}
+            />
+          </div>
           <select
             className="fchip"
             style={{ padding: '7px 12px' }}
@@ -60,6 +85,32 @@ export function ObservatiesPage() {
           </select>
         </div>
       </div>
+
+      {data && data.length > 0 && (
+        <div className="stats" style={{ marginBottom: 16 }}>
+          <div className="sc v-pink">
+            <div className="sc-icon">
+              <i className="ti ti-alert-triangle" />
+            </div>
+            <div className="sc-num">{totaal.overschreden}</div>
+            <div className="sc-lbl">Overschreden</div>
+          </div>
+          <div className="sc v-gold">
+            <div className="sc-icon">
+              <i className="ti ti-clock" />
+            </div>
+            <div className="sc-num">{totaal.binnenkort}</div>
+            <div className="sc-lbl">Binnenkort</div>
+          </div>
+          <div className="sc v-green">
+            <div className="sc-icon">
+              <i className="ti ti-circle-check" />
+            </div>
+            <div className="sc-num">{totaal.afgerond}</div>
+            <div className="sc-lbl">Afgerond</div>
+          </div>
+        </div>
+      )}
 
       <div className="alert alert-info">
         <i className="ti ti-info-circle" />
@@ -83,9 +134,15 @@ export function ObservatiesPage() {
       {error && <p style={{ color: 'var(--rose)' }}>Kon observaties niet laden.</p>}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {data?.map((kind) => (
+        {zichtbaar.map((kind) => (
           <KindKaart key={kind.kindId} kind={kind} groepNaam={groepNaam(kind.stamgroepId)} onFout={setFout} />
         ))}
+        {data && data.length > 0 && zichtbaar.length === 0 && (
+          <div className="empty">
+            <i className="ti ti-mood-empty" />
+            <p>Geen kinderen gevonden voor “{zoek}”.</p>
+          </div>
+        )}
         {data?.length === 0 && (
           <div className="empty">
             <i className="ti ti-mood-empty" />
@@ -108,6 +165,8 @@ function KindKaart({
 }) {
   const { afvinken, versturen, ongedaanMaken } = useObservatieMutaties();
   const bezig = afvinken.isPending || versturen.isPending || ongedaanMaken.isPending;
+  // Standaard ingeklapt om ruimte te besparen; openklikken toont de momenten (feedback Erik).
+  const [open, setOpen] = useState(false);
 
   async function doe(actie: () => Promise<unknown>, foutmelding: string) {
     onFout(null);
@@ -120,8 +179,15 @@ function KindKaart({
 
   return (
     <div className="card">
-      <div className="card-h">
+      <div
+        className="card-h"
+        style={{ cursor: 'pointer' }}
+        onClick={() => setOpen((o) => !o)}
+        role="button"
+        aria-expanded={open}
+      >
         <h3>
+          <i className={`ti ti-chevron-${open ? 'down' : 'right'}`} style={{ color: 'var(--text3)' }} />
           <i className="ti ti-mood-kid" style={{ color: 'var(--primary)' }} />
           {kind.voornaam} {kind.achternaam}
           <span style={{ fontWeight: 400, color: 'var(--text3)', fontSize: 11 }}>· {groepNaam}</span>
@@ -132,12 +198,18 @@ function KindKaart({
           )}
         </h3>
         <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+          {!kind.bewerkbaar && (
+            <span className="badge b-gray" title="Andere groep — alleen inzien">
+              <i className="ti ti-lock" /> alleen-lezen
+            </span>
+          )}
           {kind.aantalOverschreden > 0 && <span className="chip chip-over">{kind.aantalOverschreden} overschreden</span>}
           {kind.aantalBinnenkort > 0 && <span className="chip chip-need">{kind.aantalBinnenkort} binnenkort</span>}
           <span className="chip chip-done">{kind.aantalAfgerond} afgerond</span>
         </div>
       </div>
 
+      {open && (
       <div className="tbl-wrap" style={{ border: 'none', boxShadow: 'none', borderRadius: 0 }}>
         <table className="tbl">
           <tbody>
@@ -147,6 +219,7 @@ function KindKaart({
                 kindId={kind.kindId}
                 moment={m}
                 bezig={bezig}
+                bewerkbaar={kind.bewerkbaar}
                 onUpload={(file) =>
                   doe(
                     () => afvinken.mutateAsync({ kindId: kind.kindId, mijlpaalMaanden: m.mijlpaalMaanden, bestand: file }),
@@ -161,6 +234,7 @@ function KindKaart({
           </tbody>
         </table>
       </div>
+      )}
     </div>
   );
 }
@@ -169,6 +243,7 @@ function MomentRij({
   kindId,
   moment,
   bezig,
+  bewerkbaar,
   onUpload,
   onVersturen,
   onOngedaan,
@@ -177,6 +252,7 @@ function MomentRij({
   kindId: string;
   moment: ObservatiemomentDto;
   bezig: boolean;
+  bewerkbaar: boolean;
   onUpload: (file: File) => void;
   onVersturen: (observatieId: string) => void;
   onOngedaan: (observatieId: string) => void;
@@ -195,7 +271,7 @@ function MomentRij({
           </span>
         )}
       </td>
-      <td style={{ color: 'var(--text3)' }}>verschuldigd {korteDatum(moment.vervaldatum)}</td>
+      <td style={{ color: 'var(--text3)' }}>verschuldigd {datumNl(moment.vervaldatum)}</td>
       <td>
         <span className={`chip ${stijl.klasse}`}>{stijl.label}</span>
       </td>
@@ -206,19 +282,23 @@ function MomentRij({
               <i className="ti ti-file-type-pdf" /> PDF
             </button>
             {obs.verzondenOp ? (
-              <span style={{ fontSize: 10, color: 'var(--text3)' }}>verstuurd {korteDatum(obs.verzondenOp.slice(0, 10))}</span>
+              <span style={{ fontSize: 10, color: 'var(--text3)' }}>verstuurd {datumNl(obs.verzondenOp.slice(0, 10))}</span>
             ) : (
-              <button disabled={bezig} onClick={() => onVersturen(obs.id)} className="btn btn-green btn-xs">
-                <i className="ti ti-send" /> Versturen
+              bewerkbaar && (
+                <button disabled={bezig} onClick={() => onVersturen(obs.id)} className="btn btn-green btn-xs">
+                  <i className="ti ti-send" /> Versturen
+                </button>
+              )
+            )}
+            {bewerkbaar && (
+              <button disabled={bezig} onClick={() => onOngedaan(obs.id)} className="btn btn-rose btn-xs">
+                <i className="ti ti-arrow-back-up" />
               </button>
             )}
-            <button disabled={bezig} onClick={() => onOngedaan(obs.id)} className="btn btn-rose btn-xs">
-              <i className="ti ti-arrow-back-up" />
-            </button>
           </div>
-        ) : (
+        ) : bewerkbaar ? (
           <label
-            className={`btn btn-primary btn-xs${bezig ? '' : ''}`}
+            className="btn btn-primary btn-xs"
             style={{ cursor: bezig ? 'not-allowed' : 'pointer', opacity: bezig ? 0.5 : 1, pointerEvents: bezig ? 'none' : 'auto' }}
           >
             <i className="ti ti-upload" /> PDF uploaden
@@ -234,6 +314,8 @@ function MomentRij({
               }}
             />
           </label>
+        ) : (
+          <span style={{ fontSize: 10, color: 'var(--text3)' }}>—</span>
         )}
       </td>
     </tr>

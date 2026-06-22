@@ -13,7 +13,8 @@ public interface ITokenService
     /// Bouwt een ondertekend JWT met de standaard- en KinderKompas-claims.
     /// </summary>
     (string Token, DateTime VerlooptOpUtc) MaakAccessToken(
-        ApplicationUser gebruiker, string? rol, IReadOnlyCollection<string> capabilities);
+        ApplicationUser gebruiker, string? rol, IReadOnlyCollection<string> capabilities,
+        string? stamgroepNaam = null, string? weergavenaam = null);
 
     /// <summary>Genereert een nieuwe, cryptografisch sterke refresh-token-waarde.</summary>
     string GenereerRefreshTokenWaarde();

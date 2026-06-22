@@ -26,7 +26,8 @@ public static class WeekplanningBouwer
     public static WeekplanningDto Bouw(
         DateOnly enigeDatumInWeek,
         IEnumerable<Stamgroep> stamgroepen,
-        IEnumerable<Schoolvakantie> vakanties)
+        IEnumerable<Schoolvakantie> vakanties,
+        IEnumerable<Roosterdienst>? diensten = null)
     {
         ArgumentNullException.ThrowIfNull(stamgroepen);
         ArgumentNullException.ThrowIfNull(vakanties);
@@ -34,6 +35,8 @@ public static class WeekplanningBouwer
         DateOnly weekBegin = WeekBeginVan(enigeDatumInWeek);
         IReadOnlyList<Schoolvakantie> vakantieLijst =
             vakanties as IReadOnlyList<Schoolvakantie> ?? vakanties.ToList();
+        IReadOnlyList<Roosterdienst> dienstLijst =
+            diensten as IReadOnlyList<Roosterdienst> ?? diensten?.ToList() ?? [];
 
         var groepen = new List<StamgroepWeekDto>();
         foreach (Stamgroep stamgroep in stamgroepen)
@@ -42,7 +45,7 @@ public static class WeekplanningBouwer
             for (int i = 0; i < OpvangdagenPerWeek; i++)
             {
                 DateOnly datum = weekBegin.AddDays(i);
-                dagen.Add(BouwDag(datum, stamgroep.Kinderen, vakantieLijst));
+                dagen.Add(BouwDag(datum, stamgroep.Id, stamgroep.Kinderen, vakantieLijst, dienstLijst));
             }
 
             groepen.Add(new StamgroepWeekDto(
@@ -53,7 +56,8 @@ public static class WeekplanningBouwer
     }
 
     private static DagPlanningDto BouwDag(
-        DateOnly datum, IEnumerable<Kind> kinderen, IReadOnlyList<Schoolvakantie> vakanties)
+        DateOnly datum, Guid stamgroepId, IEnumerable<Kind> kinderen,
+        IReadOnlyList<Schoolvakantie> vakanties, IReadOnlyList<Roosterdienst> diensten)
     {
         IReadOnlyList<Kind> aanwezig = Aanwezigheid.AanwezigOp(kinderen, datum, vakanties);
 
@@ -79,11 +83,21 @@ public static class WeekplanningBouwer
             bkr = new BkrDagDto(samenstelling.Totaal, null, true, ex.Message);
         }
 
+        var begeleiders = diensten
+            .Where(d => d.StamgroepId == stamgroepId && d.Datum == datum)
+            .Select(d => new PlanningBegeleiderDto(
+                d.MedewerkerId,
+                d.Medewerker is null ? "" : $"{d.Medewerker.Voornaam} {d.Medewerker.Achternaam}",
+                d.Taakomschrijving))
+            .OrderBy(b => b.Naam)
+            .ToList();
+
         return new DagPlanningDto(
             datum,
             Aanwezigheid.NaarWeekdag(datum),
             Aanwezigheid.IsSchoolvakantie(datum, vakanties),
             kindDtos,
-            bkr);
+            bkr,
+            begeleiders);
     }
 }

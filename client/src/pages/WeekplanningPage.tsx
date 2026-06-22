@@ -74,6 +74,20 @@ export function WeekplanningPage() {
                   {g.dagen.map((d) => (
                     <td key={d.datum} style={{ textAlign: 'center' }}>
                       <BkrBadge bkr={d.bkr} />
+                      {d.begeleiders.length > 0 && (
+                        <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
+                          {d.begeleiders.map((b) => (
+                            <span
+                              key={b.medewerkerId}
+                              className="badge b-violet"
+                              style={{ fontSize: 9 }}
+                              title={b.taakomschrijving ?? 'Ingeplande begeleider'}
+                            >
+                              <i className="ti ti-user" /> {b.naam}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                       {d.kinderen.length > 0 && (
                         <ul style={{ marginTop: 4, listStyle: 'none', fontSize: 10, color: 'var(--text3)' }}>
                           {d.kinderen.map((k) => (
@@ -98,7 +112,7 @@ export function WeekplanningPage() {
       )}
 
       <p style={{ marginTop: 12, fontSize: 10, color: 'var(--text3)' }}>
-        BKR-badge per dag: aantal kinderen · vereiste pm'ers. Rood = boven het wettelijk groepsmaximum.
+        BKR-badge per dag: aantal kinderen · vereiste begeleiders. Rood = boven het wettelijk groepsmaximum.
       </p>
     </div>
   );

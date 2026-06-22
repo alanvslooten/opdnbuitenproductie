@@ -17,9 +17,9 @@ export function BkrBadge({ bkr }: { bkr: BkrDagDto }) {
   return (
     <span
       className="badge b-green"
-      title={`${bkr.aantalKinderen} kinderen · ${bkr.vereisteHoeveelheidPmers} pm'er(s) vereist`}
+      title={`${bkr.aantalKinderen} kinderen · ${bkr.vereisteHoeveelheidPmers} begeleider(s) vereist`}
     >
-      {bkr.aantalKinderen}k · {bkr.vereisteHoeveelheidPmers} pm
+      {bkr.aantalKinderen}k · {bkr.vereisteHoeveelheidPmers} b
     </span>
   );
 }

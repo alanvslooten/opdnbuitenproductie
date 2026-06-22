@@ -160,7 +160,21 @@ public sealed class AuthService : IAuthService
     {
         (string? rolNaam, IReadOnlyList<string> capabilities) = await HaalRolEnCapabilitiesAsync(gebruiker, ct);
 
-        (string accessToken, DateTime verlooptOp) = _tokens.MaakAccessToken(gebruiker, rolNaam, capabilities);
+        // Groepsportaal-account: de groepsnaam erbij voor de scope/weergave (zijbalk).
+        string? stamgroepNaam = gebruiker.StamgroepId is { } sid
+            ? await _db.Stamgroepen.IgnoreQueryFilters().AsNoTracking()
+                .Where(s => s.Id == sid).Select(s => s.Naam).FirstOrDefaultAsync(ct)
+            : null;
+
+        // Weergavenaam: de volledige naam van de gekoppelde medewerker (de zijbalk toont
+        // die i.p.v. de kale inlognaam). Afwezig voor het gedeelde portaal-account.
+        string? weergavenaam = gebruiker.MedewerkerId is { } mid
+            ? await _db.Medewerkers.IgnoreQueryFilters().AsNoTracking()
+                .Where(m => m.Id == mid).Select(m => m.Voornaam + " " + m.Achternaam).FirstOrDefaultAsync(ct)
+            : null;
+
+        (string accessToken, DateTime verlooptOp) =
+            _tokens.MaakAccessToken(gebruiker, rolNaam, capabilities, stamgroepNaam, weergavenaam);
 
         refreshWaarde ??= _tokens.GenereerRefreshTokenWaarde();
         _db.RefreshTokens.Add(new RefreshToken
@@ -173,7 +187,8 @@ public sealed class AuthService : IAuthService
         });
         await _db.SaveChangesAsync(ct);
 
-        return new AuthResponse(false, accessToken, refreshWaarde, verlooptOp, rolNaam, capabilities);
+        return new AuthResponse(
+            false, accessToken, refreshWaarde, verlooptOp, rolNaam, capabilities, stamgroepNaam, weergavenaam);
     }
 
     /// <summary>

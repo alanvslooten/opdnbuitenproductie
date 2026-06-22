@@ -6,16 +6,19 @@ import { DashboardPage } from './pages/DashboardPage';
 import { MeldingenPage } from './pages/MeldingenPage';
 import { InstellingenPage } from './pages/InstellingenPage';
 import { WeekplanningPage } from './pages/WeekplanningPage';
+import { MaandplanningPage } from './pages/MaandplanningPage';
 import { DagfilterPage } from './pages/DagfilterPage';
 import { KinderenPage } from './pages/KinderenPage';
 import { KindFormPage } from './pages/KindFormPage';
 import { StamgroepenPage } from './pages/StamgroepenPage';
+import { ContactenPage } from './pages/ContactenPage';
 import { WachtlijstPage } from './pages/WachtlijstPage';
 import { WachtlijstFormPage } from './pages/WachtlijstFormPage';
 import { RoosterPage } from './pages/RoosterPage';
 import { MedewerkersPage } from './pages/MedewerkersPage';
 import { VerlofPage } from './pages/VerlofPage';
 import { ObservatiesPage } from './pages/ObservatiesPage';
+import { BkrCalculatorPage } from './pages/BkrCalculatorPage';
 import { GroepsportaalPage } from './pages/GroepsportaalPage';
 import { ThuisportaalPage } from './pages/ThuisportaalPage';
 import { Capabilities } from './types';
@@ -45,7 +48,7 @@ export default function App() {
   // pagina die hij mag zien.
   const startpagina = heeft(Capabilities.DashboardZien)
     ? '/dashboard'
-    : heeft(Capabilities.KinderenBeheren)
+    : heeft(Capabilities.KinderenBeheren) || heeft(Capabilities.PlanningZien)
       ? '/planning'
       : heeft(Capabilities.GroepsportaalGebruiken)
         ? '/groepsportaal'
@@ -60,15 +63,18 @@ export default function App() {
         <Route path="/meldingen" element={<MeldingenPage />} />
         <Route path="/instellingen" element={<InstellingenPage />} />
         <Route path="/planning" element={<WeekplanningPage />} />
+        <Route path="/maandplanning" element={<MaandplanningPage />} />
         <Route path="/dagfilter" element={<DagfilterPage />} />
         <Route path="/kinderen" element={<KinderenPage />} />
         <Route path="/kinderen/nieuw" element={<KindFormPage />} />
         <Route path="/kinderen/:id" element={<KindFormPage />} />
         <Route path="/observaties" element={<ObservatiesPage />} />
         <Route path="/stamgroepen" element={<StamgroepenPage />} />
+        <Route path="/bkr" element={<BkrCalculatorPage />} />
         <Route path="/rooster" element={<RoosterPage />} />
         <Route path="/medewerkers" element={<MedewerkersPage />} />
         <Route path="/verlof" element={<VerlofPage />} />
+        <Route path="/contacten" element={<ContactenPage />} />
         <Route path="/wachtlijst" element={<WachtlijstPage />} />
         <Route path="/wachtlijst/nieuw" element={<WachtlijstFormPage />} />
         <Route path="/wachtlijst/:id" element={<WachtlijstFormPage />} />

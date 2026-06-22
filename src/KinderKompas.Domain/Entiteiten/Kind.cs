@@ -15,15 +15,21 @@ public class Kind : TenantEntiteit
     public DateOnly Geboortedatum { get; set; }
 
     /// <summary>
-    /// Privacy-gevoelige contactgegevens van de ouder/verzorger. Optioneel:
-    /// niet elk kind heeft (al) een ingevuld contact. Zichtbaarheid loopt via de
-    /// capability <c>MagOudergegevensZien</c> en DTO-projectie.
+    /// Privacy-gevoelige contactgegevens van de ouders/verzorgers/voogden. Een kind
+    /// kan er meerdere hebben (minimaal twee is wenselijk); de lijst kan leeg zijn als
+    /// er nog niets is ingevuld. Zichtbaarheid loopt via de capability
+    /// <c>MagOudergegevensZien</c> en DTO-projectie. De eerste in de lijst geldt als
+    /// het primaire contact (o.a. voor het mailen van observaties).
     /// </summary>
-    public Oudercontact? Oudercontact { get; set; }
+    public List<Oudercontact> Oudercontacten { get; set; } = new();
 
     /// <summary>De fysieke stamgroep waarin het kind is geplaatst.</summary>
     public Guid StamgroepId { get; set; }
     public Stamgroep? Stamgroep { get; set; }
+
+    /// <summary>Het contact (ouder/verzorger/gezin) waartoe dit kind hoort. Optioneel.</summary>
+    public Guid? ContactId { get; set; }
+    public Contact? Contact { get; set; }
 
     /// <summary>
     /// De mentor-medewerker (pedagogisch medewerker) van dit kind. In de Nederlandse

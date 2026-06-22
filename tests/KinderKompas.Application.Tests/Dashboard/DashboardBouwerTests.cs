@@ -24,7 +24,8 @@ public class DashboardBouwerTests
                 Guid.NewGuid(), "K", "ind", groep, Leeftijdsgroep.EenTotTwee, Contracttype.Weken49))
             .ToList();
         return new DagPlanningDto(datum, Weekdag.Maandag, false, kinderen,
-            new BkrDagDto(aantalKinderen, vereiste, bovenMax, bovenMax ? "boven max" : null));
+            new BkrDagDto(aantalKinderen, vereiste, bovenMax, bovenMax ? "boven max" : null),
+            Array.Empty<PlanningBegeleiderDto>());
     }
 
     private static DashboardCijfers LegeCijfers =>

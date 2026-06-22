@@ -19,7 +19,9 @@ public sealed record AuthResponse(
     string? RefreshToken,
     DateTime? VerlooptOpUtc,
     string? Rol,
-    IReadOnlyList<string> Capabilities)
+    IReadOnlyList<string> Capabilities,
+    string? StamgroepNaam = null,
+    string? Weergavenaam = null)
 {
     public static AuthResponse TweeFactorNodig() =>
         new(true, null, null, null, null, Array.Empty<string>());

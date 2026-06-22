@@ -40,7 +40,10 @@ public sealed record KindObservatieschemaDto(
     int AantalOverschreden,
     int AantalBinnenkort,
     int AantalAfgerond,
-    IReadOnlyList<ObservatiemomentDto> Momenten);
+    IReadOnlyList<ObservatiemomentDto> Momenten,
+    // Of de huidige gebruiker dit kind mag bewerken (afvinken/versturen/ongedaan).
+    // Een groepsportaal-account ziet alle groepen maar bewerkt alleen de eigen groep.
+    bool Bewerkbaar = true);
 
 /// <summary>Invoermodel voor het afvinken (uploaden) van een observatie.</summary>
 /// <remarks>De PDF zelf komt als aparte multipart-bestandsstroom, niet in dit model.</remarks>

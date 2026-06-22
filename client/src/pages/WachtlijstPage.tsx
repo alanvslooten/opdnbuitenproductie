@@ -7,6 +7,14 @@ import { opvangdagenTekst } from '../components/OpvangdagenKiezer';
 import { korteDatum } from '../datum';
 import { WACHTLIJST_STATUS_LABEL, type WachtlijstInschrijvingDto } from '../types';
 
+// Rendabiliteits-indicatie: meer gewenste opvangdagen = meer omzet. Puur weergave —
+// beïnvloedt de prioriteitsvolgorde NIET (feedback Erik).
+function rendabiliteit(dagenBits: number): { dagen: number; euro: string } {
+  const dagen = [1, 2, 4, 8, 16].filter((b) => (dagenBits & b) !== 0).length;
+  const euro = dagen >= 4 ? '€€€' : dagen >= 3 ? '€€' : '€';
+  return { dagen, euro };
+}
+
 export function WachtlijstPage() {
   const [toonGeplaatst, setToonGeplaatst] = useState(false);
   const { data, isLoading, error } = useWachtlijst(toonGeplaatst);
@@ -50,6 +58,7 @@ export function WachtlijstPage() {
                 <th>Type</th>
                 <th>Gewenst vanaf</th>
                 <th>Openstaande dagen</th>
+                <th title="Rendabiliteit: meer gewenste dagen = meer omzet (beïnvloedt de volgorde niet)">Rendabiliteit</th>
                 <th title="Prioriteitsscore">Score</th>
                 <th>Status</th>
                 <th style={{ textAlign: 'right' }}>Acties</th>
@@ -82,6 +91,19 @@ export function WachtlijstPage() {
                     {w.reedsGeplaatsteDagen !== 0 && (
                       <div style={{ fontSize: 10, color: 'var(--green)' }}>geplaatst: {opvangdagenTekst(w.reedsGeplaatsteDagen)}</div>
                     )}
+                  </td>
+                  <td>
+                    {(() => {
+                      const r = rendabiliteit(w.gewensteOpvangdagen);
+                      return (
+                        <span
+                          className="badge b-green"
+                          title={`${r.dagen} gewenste dag(en) — meer dagen = hogere omzet (indicatie; beïnvloedt de volgorde niet)`}
+                        >
+                          {r.dagen}d · {r.euro}
+                        </span>
+                      );
+                    })()}
                   </td>
                   <td>
                     <span style={{ fontWeight: 700 }} title={w.prioriteitOnderdelen.join('\n')}>
@@ -123,7 +145,7 @@ export function WachtlijstPage() {
               ))}
               {data.length === 0 && (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: 'center', color: 'var(--text3)', padding: '24px 0' }}>
+                  <td colSpan={9} style={{ textAlign: 'center', color: 'var(--text3)', padding: '24px 0' }}>
                     {toonGeplaatst ? 'Geen inschrijvingen.' : 'Geen wachtende inschrijvingen.'}
                   </td>
                 </tr>

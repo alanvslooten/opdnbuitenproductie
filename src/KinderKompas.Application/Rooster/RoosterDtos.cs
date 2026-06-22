@@ -2,6 +2,13 @@ using KinderKompas.Domain.Enums;
 
 namespace KinderKompas.Application.Rooster;
 
+/// <summary>Eén regel in de log van verstuurde roosters.</summary>
+public sealed record VerstuurdRoosterDto(
+    Guid Id,
+    DateOnly WeekBegin,
+    DateTime? VerstuurdOp,
+    int AantalDiensten);
+
 /// <summary>De kleur van de BKR-indicator boven een roosterdag.</summary>
 public enum BkrIndicatorKleur
 {

@@ -110,6 +110,62 @@ public sealed class RoosterController : ControllerBase
         return Ok(await BouwWeekDto(week.WeekBegin, ct));
     }
 
+    /// <summary>
+    /// Een verstuurd rooster herroepen: terug naar concept zodat het aangepast en
+    /// opnieuw verstuurd kan worden. Alleen toegestaan op een verstuurd rooster.
+    /// </summary>
+    [HttpPost("{id:guid}/herroepen")]
+    [Authorize(Policy = Capabilities.MagRoosterVersturen)]
+    public async Task<ActionResult<RoosterWeekDto>> Herroepen(Guid id, CancellationToken ct)
+    {
+        Roosterweek? week = await _db.Roosterweken.FirstOrDefaultAsync(w => w.Id == id, ct);
+        if (week is null)
+        {
+            return NotFound();
+        }
+        if (week.Status != RoosterStatus.Verstuurd)
+        {
+            return Conflict(new ProblemDetails
+            {
+                Title = "Niet verstuurd",
+                Detail = "Alleen een verstuurd rooster kan worden herroepen.",
+            });
+        }
+
+        week.Status = RoosterStatus.Concept;
+        week.VerstuurdOp = null;
+        await _db.SaveChangesAsync(ct);
+
+        return Ok(await BouwWeekDto(week.WeekBegin, ct));
+    }
+
+    /// <summary>
+    /// Log van verstuurde roosters, nieuwste eerst en filterbaar op een datumbereik
+    /// (de client biedt presets week/maand/kwartaal/jaar via <paramref name="van"/>/<paramref name="tot"/>).
+    /// </summary>
+    [HttpGet("verstuurd")]
+    [Authorize(Policy = Capabilities.MagRoosterBeheren)]
+    public async Task<ActionResult<IReadOnlyList<VerstuurdRoosterDto>>> VerstuurdeRoosters(
+        [FromQuery] DateOnly? van, [FromQuery] DateOnly? tot, CancellationToken ct)
+    {
+        IQueryable<Roosterweek> query = _db.Roosterweken.AsNoTracking()
+            .Where(w => w.Status == RoosterStatus.Verstuurd);
+        if (van is { } v)
+        {
+            query = query.Where(w => w.WeekBegin >= v);
+        }
+        if (tot is { } t)
+        {
+            query = query.Where(w => w.WeekBegin <= t);
+        }
+
+        List<VerstuurdRoosterDto> lijst = await query
+            .OrderByDescending(w => w.WeekBegin)
+            .Select(w => new VerstuurdRoosterDto(w.Id, w.WeekBegin, w.VerstuurdOp, w.Diensten.Count))
+            .ToListAsync(ct);
+        return Ok(lijst);
+    }
+
     /// <summary>Een dienst bijwerken: taakomschrijving en urencorrectie (in kwartieren).</summary>
     [HttpPut("dienst/{id:guid}")]
     [Authorize(Policy = Capabilities.MagRoosterBeheren)]

@@ -29,8 +29,15 @@ function isoVan(d: Date): string {
   return `${jaar}-${maand}-${dag}`;
 }
 
-/** "ma 15 jun" voor compacte weergave. */
+/** "ma 15 jun" voor compacte weergave (week-/dagnavigatie). */
 export function korteDatum(iso: string): string {
   const d = new Date(`${iso}T00:00:00`);
   return d.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' });
+}
+
+/** Europees datumformaat "DD-MM-JJJJ" voor lijsten en records. */
+export function datumNl(iso: string): string {
+  // iso = "yyyy-MM-dd"; los van tijdzone opsplitsen i.p.v. via Date (voorkomt verschuiving).
+  const [jaar, maand, dag] = iso.slice(0, 10).split('-');
+  return `${dag}-${maand}-${jaar}`;
 }
