@@ -18,7 +18,6 @@ const LEEG = {
   noodcontactTelefoon: '',
   contractVast: true,
   contracteinddatum: '' as string,
-  pincode: '',
 };
 
 function dagenTekst(vlaggen: number): string {
@@ -52,7 +51,6 @@ export function MedewerkersPage() {
       noodcontactTelefoon: m.noodcontactTelefoon ?? '',
       contractVast: m.contractVast,
       contracteinddatum: m.contracteinddatum ?? '',
-      pincode: '',
     });
     setFout(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -85,7 +83,6 @@ export function MedewerkersPage() {
       noodcontactTelefoon: form.noodcontactTelefoon || null,
       contractVast: form.contractVast,
       contracteinddatum: form.contractVast ? null : form.contracteinddatum || null,
-      pincode: form.pincode || null,
     };
     try {
       if (bewerktId) await bewerken.mutateAsync({ id: bewerktId, invoer });
@@ -232,14 +229,6 @@ export function MedewerkersPage() {
                 <input type="date" value={form.contracteinddatum} onChange={(e) => setForm((f) => ({ ...f, contracteinddatum: e.target.value }))} />
               </div>
             )}
-            <div className="fld" style={{ marginBottom: 0, width: 150 }}>
-              <label>Pincode (klokken)</label>
-              <input
-                value={form.pincode}
-                placeholder={bewerktId ? '•••• (ongewijzigd)' : '4 cijfers'}
-                onChange={(e) => setForm((f) => ({ ...f, pincode: e.target.value.replace(/\D/g, '').slice(0, 6) }))}
-              />
-            </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -363,7 +352,6 @@ function MedewerkerDetail({ m, onBewerk, onSluit }: { m: MedewerkerDto; onBewerk
             <Veld label="Noodcontact" waarde={m.noodcontactNaam ?? '—'} />
             <Veld label="Noodcontact tel." waarde={m.noodcontactTelefoon ?? '—'} />
             <Veld label="Contracturen/week" waarde={`${m.contracturen} u`} />
-            <Veld label="Pincode ingesteld" waarde={m.heeftPincode ? 'Ja' : 'Nee'} />
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>

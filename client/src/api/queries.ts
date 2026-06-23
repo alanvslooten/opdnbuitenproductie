@@ -119,7 +119,9 @@ export function useKindMutaties() {
     onSuccess: invalideer,
   });
   const verwijderen = useMutation({
-    mutationFn: (id: string) => api<void>(`/api/kinderen/${id}`, { method: 'DELETE' }),
+    // Verwijderen vereist het wachtwoord van de beheerder ter bevestiging (2-stapscheck).
+    mutationFn: ({ id, wachtwoord }: { id: string; wachtwoord: string }) =>
+      api<void>(`/api/kinderen/${id}`, { method: 'DELETE', body: JSON.stringify({ wachtwoord }) }),
     onSuccess: invalideer,
   });
   return { aanmaken, bewerken, verwijderen };
@@ -190,7 +192,9 @@ export function useContactMutaties() {
     onSuccess: invalideer,
   });
   const verwijderen = useMutation({
-    mutationFn: (id: string) => api<void>(`/api/contacten/${id}`, { method: 'DELETE' }),
+    // 2-stapscheck: bevestigen met het beheerder-wachtwoord.
+    mutationFn: ({ id, wachtwoord }: { id: string; wachtwoord: string }) =>
+      api<void>(`/api/contacten/${id}`, { method: 'DELETE', body: JSON.stringify({ wachtwoord }) }),
     onSuccess: invalideer,
   });
   const rondleidingToevoegen = useMutation({

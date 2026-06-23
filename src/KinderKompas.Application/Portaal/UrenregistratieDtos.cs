@@ -18,10 +18,10 @@ public sealed record UrenregistratieDto(
 
 /// <summary>
 /// Invoer voor het inklokken op het tablet: de medewerker kiest zichzelf en bevestigt
-/// met de eigen <see cref="Pincode"/> (identiteitscheck — voorkomt dat iemand een
-/// collega klokt). De pincode is optioneel zolang de medewerker er nog geen heeft.
+/// met het eigen account-<see cref="Wachtwoord"/> (identiteitscheck — hetzelfde wachtwoord
+/// als in het medewerkers-portaal, geen aparte pincode). Voorkomt dat iemand een collega klokt.
 /// </summary>
-public sealed record InklokInvoer(Guid MedewerkerId, Guid? RoosterdienstId, Guid? StamgroepId, string? Pincode = null);
+public sealed record InklokInvoer(Guid MedewerkerId, Guid? RoosterdienstId, Guid? StamgroepId, string? Wachtwoord = null);
 
 /// <summary>
 /// Invoer voor het uitklokken. <see cref="Uitgeklokt"/> is optioneel: zonder waarde

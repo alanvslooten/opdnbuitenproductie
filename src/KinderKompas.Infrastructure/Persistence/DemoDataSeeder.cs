@@ -110,9 +110,9 @@ public sealed class DemoDataSeeder
                 await _db.SaveChangesAsync(ct);
             }
 
-            // Backfill van de F-22-velden (contact, contract, pincode) — idempotent:
-            // alleen wanneer er nog geen pincode staat.
-            if (string.IsNullOrEmpty(m.Pincode))
+            // Backfill van de F-22-velden (contact, contract) — idempotent: alleen
+            // wanneer er nog geen telefoon staat.
+            if (string.IsNullOrEmpty(m.Telefoon))
             {
                 bool vast = d.Rol is Rol.Beheerder or Rol.Hulpbeheerder or Rol.Senior;
                 m.Telefoon = $"06{10_000_000 + i:00000000}";
@@ -122,7 +122,6 @@ public sealed class DemoDataSeeder
                 m.ContractVast = vast;
                 m.Contractbegindatum = vandaag.AddMonths(-12 - i);
                 m.Contracteinddatum = vast ? null : vandaag.AddMonths(6 + i);
-                m.Pincode = (1000 + i * 111).ToString();
                 await _db.SaveChangesAsync(ct);
             }
             resultaat[d.Sleutel] = m;

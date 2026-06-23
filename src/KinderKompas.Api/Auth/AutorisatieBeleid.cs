@@ -30,6 +30,15 @@ public static class AutorisatieBeleid
         Capabilities.MagGroepsportaalGebruiken,
     };
 
+    /// <summary>Kinderen INZIEN: beheren (muteren) óf alleen-lezen.</summary>
+    public const string KinderenLezen = "KinderenLezen";
+
+    private static readonly string[] KinderenLeesCapabilities =
+    {
+        Capabilities.MagKinderenBeheren,
+        Capabilities.MagKinderenLezen,
+    };
+
     public static void VoegCapabilityPoliciesToe(AuthorizationOptions options)
     {
         foreach (CapabilityDefinitie def in Capabilities.Alle)
@@ -40,6 +49,10 @@ public static class AutorisatieBeleid
 
         options.AddPolicy(StamgroepenLezen, beleid =>
             beleid.RequireAssertion(ctx => StamgroepenLeesCapabilities.Any(cap =>
+                ctx.User.HasClaim(KinderKompasClaims.Capability, cap))));
+
+        options.AddPolicy(KinderenLezen, beleid =>
+            beleid.RequireAssertion(ctx => KinderenLeesCapabilities.Any(cap =>
                 ctx.User.HasClaim(KinderKompasClaims.Capability, cap))));
     }
 }

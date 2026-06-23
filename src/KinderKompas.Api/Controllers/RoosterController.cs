@@ -179,6 +179,7 @@ public sealed class RoosterController : ControllerBase
 
         dienst.Taakomschrijving = invoer.Taakomschrijving;
         dienst.UrencorrectieKwartieren = invoer.UrencorrectieKwartieren;
+        dienst.Dienstsoort = invoer.Dienstsoort;
         await _db.SaveChangesAsync(ct);
         return NoContent();
     }

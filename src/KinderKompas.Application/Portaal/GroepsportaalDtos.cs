@@ -1,3 +1,5 @@
+using KinderKompas.Domain.Enums;
+
 namespace KinderKompas.Application.Portaal;
 
 /// <summary>Eén ingeplande dienst van de dag, zoals het Groepsportaal die op locatie toont.</summary>
@@ -7,7 +9,8 @@ public sealed record DagdienstDto(
     string MedewerkerNaam,
     Guid StamgroepId,
     string StamgroepNaam,
-    string? Taakomschrijving);
+    string? Taakomschrijving,
+    Dienstsoort Dienstsoort);
 
 /// <summary>De diensten van één dag op locatie, met de verstuurd-status van de week.</summary>
 public sealed record GroepsportaalDagDto(

@@ -55,6 +55,7 @@ builder.Services.AddApplication();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ITenantProvider, ClaimsTenantProvider>();
 builder.Services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
+builder.Services.AddScoped<KinderKompas.Api.Auth.WachtwoordChecker>();
 
 // JWT-authenticatie.
 JwtOptions jwt = builder.Configuration.GetSection(JwtOptions.Sectie).Get<JwtOptions>()

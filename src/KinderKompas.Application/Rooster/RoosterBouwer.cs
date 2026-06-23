@@ -1,5 +1,6 @@
 using KinderKompas.Application.Planning;
 using KinderKompas.Domain.Entiteiten;
+using KinderKompas.Domain.Enums;
 using KinderKompas.Domain.ValueObjects;
 
 namespace KinderKompas.Application.Rooster;
@@ -103,7 +104,8 @@ public static class RoosterBouwer
             RoosterCelKleur kleur = BepaalCelKleur(m.Id, dag.Datum, dienst, verlof, ziek);
             return new RoosterCelDto(
                 dag.Datum, dag.Dag, kleur,
-                dienst?.Id, dienst?.Taakomschrijving, dienst?.UrencorrectieKwartieren ?? 0);
+                dienst?.Id, dienst?.Taakomschrijving, dienst?.UrencorrectieKwartieren ?? 0,
+                dienst?.Dienstsoort ?? Dienstsoort.Regulier);
         }).ToList();
 
         return new RoosterMedewerkerRijDto(m.Id, $"{m.Voornaam} {m.Achternaam}", cellen);

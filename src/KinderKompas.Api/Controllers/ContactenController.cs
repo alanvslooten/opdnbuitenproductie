@@ -1,3 +1,4 @@
+using KinderKompas.Api.Auth;
 using KinderKompas.Application.Contacten;
 using KinderKompas.Domain.Autorisatie;
 using KinderKompas.Domain.Entiteiten;
@@ -21,10 +22,12 @@ namespace KinderKompas.Api.Controllers;
 public sealed class ContactenController : ControllerBase
 {
     private readonly KinderKompasDbContext _db;
+    private readonly WachtwoordChecker _wachtwoord;
 
-    public ContactenController(KinderKompasDbContext db)
+    public ContactenController(KinderKompasDbContext db, WachtwoordChecker wachtwoord)
     {
         _db = db;
+        _wachtwoord = wachtwoord;
     }
 
     private static string Naam(string voornaam, string achternaam) => $"{voornaam} {achternaam}".Trim();
@@ -123,8 +126,18 @@ public sealed class ContactenController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> Verwijderen(Guid id, CancellationToken ct)
+    public async Task<IActionResult> Verwijderen(Guid id, [FromBody] BevestigInvoer? invoer, CancellationToken ct)
     {
+        // Kritieke data: bevestig met het wachtwoord van de ingelogde beheerder.
+        if (!await _wachtwoord.KloptHuidigeGebruikerAsync(invoer?.Wachtwoord))
+        {
+            return Conflict(new ProblemDetails
+            {
+                Title = "Bevestiging vereist",
+                Detail = "Voer je wachtwoord in om dit contact te verwijderen.",
+            });
+        }
+
         Contact? contact = await _db.Contacten.FirstOrDefaultAsync(c => c.Id == id, ct);
         if (contact is null)
         {

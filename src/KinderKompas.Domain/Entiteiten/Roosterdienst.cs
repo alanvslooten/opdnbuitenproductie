@@ -1,4 +1,5 @@
 using KinderKompas.Domain.Common;
+using KinderKompas.Domain.Enums;
 
 namespace KinderKompas.Domain.Entiteiten;
 
@@ -24,6 +25,9 @@ public class Roosterdienst : TenantEntiteit
 
     /// <summary>Optionele taakomschrijving voor deze medewerker op deze dag (zichtbaar in het portaal).</summary>
     public string? Taakomschrijving { get; set; }
+
+    /// <summary>Soort dienst: regulier, vroege (openen) of late (sluiten) dienst.</summary>
+    public Dienstsoort Dienstsoort { get; set; } = Dienstsoort.Regulier;
 
     /// <summary>
     /// Urenregistratie als plus/min ten opzichte van de standaard dienstduur,

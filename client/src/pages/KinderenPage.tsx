@@ -2,18 +2,23 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useKinderen, useKindMutaties, useMedewerkers, useStamgroepen } from '../api/queries';
 import { ApiFout } from '../api/client';
+import { useAuth } from '../auth/AuthContext';
 import { opvangdagenTekst } from '../components/OpvangdagenKiezer';
+import { BevestigWachtwoordDialog } from '../components/BevestigWachtwoordDialog';
 import { datumNl } from '../datum';
-import { Contracttype, type KindDto } from '../types';
+import { Capabilities, Contracttype, type KindDto } from '../types';
 
 export function KinderenPage() {
+  const { heeft } = useAuth();
+  const magBeheren = heeft(Capabilities.KinderenBeheren);
   const [stamgroepFilter, setStamgroepFilter] = useState<string>('');
   const { data: groepen } = useStamgroepen();
   const { data: medewerkers } = useMedewerkers();
   const { data, isLoading, error } = useKinderen(stamgroepFilter || undefined);
   const { verwijderen } = useKindMutaties();
-  const [fout, setFout] = useState<string | null>(null);
   const [detail, setDetail] = useState<KindDto | null>(null);
+  const [verwijderDoel, setVerwijderDoel] = useState<KindDto | null>(null);
+  const [verwijderFout, setVerwijderFout] = useState<string | null>(null);
 
   const groepNaam = (id: string) => groepen?.find((g) => g.id === id)?.naam ?? '—';
   const mentorNaam = (id: string | null) => {
@@ -21,13 +26,14 @@ export function KinderenPage() {
     return m ? `${m.voornaam} ${m.achternaam}` : '—';
   };
 
-  async function verwijder(id: string, naam: string) {
-    setFout(null);
-    if (!confirm(`${naam} verwijderen?`)) return;
+  async function bevestigVerwijderen(wachtwoord: string) {
+    if (!verwijderDoel) return;
+    setVerwijderFout(null);
     try {
-      await verwijderen.mutateAsync(id);
+      await verwijderen.mutateAsync({ id: verwijderDoel.id, wachtwoord });
+      setVerwijderDoel(null);
     } catch (err) {
-      setFout(err instanceof ApiFout ? err.message : 'Verwijderen mislukt.');
+      setVerwijderFout(err instanceof ApiFout ? err.message : 'Verwijderen mislukt.');
     }
   }
 
@@ -36,21 +42,17 @@ export function KinderenPage() {
       <div className="ph">
         <div>
           <h1>Kinderen</h1>
-          <p>Inschrijvingen, opvangdagen en contracten</p>
+          <p>{magBeheren ? 'Inschrijvingen, opvangdagen en contracten' : 'Inzien (alleen-lezen)'}</p>
         </div>
-        <div className="ph-actions">
-          <Link to="/kinderen/nieuw" className="btn btn-primary btn-sm">
-            <i className="ti ti-user-plus" /> Kind toevoegen
-          </Link>
-        </div>
+        {magBeheren && (
+          <div className="ph-actions">
+            <Link to="/kinderen/nieuw" className="btn btn-primary btn-sm">
+              <i className="ti ti-user-plus" /> Kind toevoegen
+            </Link>
+          </div>
+        )}
       </div>
 
-      {fout && (
-        <div className="alert alert-bad">
-          <i className="ti ti-alert-circle" />
-          <span>{fout}</span>
-        </div>
-      )}
 
       <div className="filters">
         <select
@@ -109,12 +111,20 @@ export function KinderenPage() {
                 <td>{k.contracttype === Contracttype.Weken40 ? '40 wkn' : '49 wkn'}</td>
                 <td style={{ color: 'var(--text3)' }}>{datumNl(k.effectieveEinddatum)}</td>
                 <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                  <Link to={`/kinderen/${k.id}`} className="btn btn-outline btn-xs" style={{ marginRight: 6 }}>
-                    <i className="ti ti-pencil" /> Bewerken
-                  </Link>
-                  <button onClick={() => verwijder(k.id, k.voornaam)} className="btn btn-rose btn-xs">
-                    <i className="ti ti-trash" />
-                  </button>
+                  {magBeheren ? (
+                    <>
+                      <Link to={`/kinderen/${k.id}`} className="btn btn-outline btn-xs" style={{ marginRight: 6 }}>
+                        <i className="ti ti-pencil" /> Bewerken
+                      </Link>
+                      <button onClick={() => { setVerwijderFout(null); setVerwijderDoel(k); }} className="btn btn-rose btn-xs">
+                        <i className="ti ti-trash" />
+                      </button>
+                    </>
+                  ) : (
+                    <button onClick={() => setDetail(k)} className="btn btn-outline btn-xs">
+                      <i className="ti ti-eye" /> Bekijken
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
@@ -134,7 +144,19 @@ export function KinderenPage() {
           kind={detail}
           groepNaam={groepNaam(detail.stamgroepId)}
           mentorNaam={mentorNaam(detail.mentorId)}
+          magBeheren={magBeheren}
           onSluit={() => setDetail(null)}
+        />
+      )}
+
+      {verwijderDoel && (
+        <BevestigWachtwoordDialog
+          titel="Kind verwijderen"
+          bericht={`Weet je zeker dat je ${verwijderDoel.voornaam} ${verwijderDoel.achternaam} wilt verwijderen? Dit kan niet ongedaan worden gemaakt. Bevestig met je wachtwoord.`}
+          bezig={verwijderen.isPending}
+          fout={verwijderFout}
+          onBevestig={bevestigVerwijderen}
+          onSluit={() => setVerwijderDoel(null)}
         />
       )}
     </div>
@@ -145,11 +167,13 @@ function KindDetail({
   kind,
   groepNaam,
   mentorNaam,
+  magBeheren,
   onSluit,
 }: {
   kind: KindDto;
   groepNaam: string;
   mentorNaam: string;
+  magBeheren: boolean;
   onSluit: () => void;
 }) {
   return (
@@ -188,11 +212,13 @@ function KindDetail({
             <p style={{ fontSize: 12, color: 'var(--text3)' }}>Geen oudercontact vastgelegd.</p>
           )}
         </div>
-        <div className="modal-f" style={{ position: 'static' }}>
-          <Link to={`/kinderen/${kind.id}`} className="btn btn-primary btn-sm">
-            <i className="ti ti-pencil" /> Bewerken
-          </Link>
-        </div>
+        {magBeheren && (
+          <div className="modal-f" style={{ position: 'static' }}>
+            <Link to={`/kinderen/${kind.id}`} className="btn btn-primary btn-sm">
+              <i className="ti ti-pencil" /> Bewerken
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

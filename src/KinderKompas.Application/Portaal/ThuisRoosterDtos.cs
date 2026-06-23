@@ -22,7 +22,8 @@ public sealed record ThuisRoosterDagDto(
     Guid StamgroepId,
     string StamgroepNaam,
     string? Taakomschrijving,
-    int UrencorrectieKwartieren);
+    int UrencorrectieKwartieren,
+    Dienstsoort Dienstsoort);
 
 /// <summary>
 /// Bouwt het eigen-rooster-leesmodel voor het thuis-portaal. Pure functie zonder
@@ -54,7 +55,8 @@ public static class ThuisRoosterBouwer
                 d.StamgroepId,
                 stamgroepNamen.GetValueOrDefault(d.StamgroepId, ""),
                 d.Taakomschrijving,
-                d.UrencorrectieKwartieren))
+                d.UrencorrectieKwartieren,
+                d.Dienstsoort))
             .ToList();
 
         return new ThuisRoosterDto(weekBegin, true, week!.VerstuurdOp, dagen);

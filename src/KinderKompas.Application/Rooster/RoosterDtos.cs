@@ -72,10 +72,11 @@ public sealed record RoosterCelDto(
     RoosterCelKleur Kleur,
     Guid? DienstId,
     string? Taakomschrijving,
-    int UrencorrectieKwartieren);
+    int UrencorrectieKwartieren,
+    Dienstsoort Dienstsoort);
 
-/// <summary>Invoer voor het bijwerken van een dienst (taak + urencorrectie in kwartieren).</summary>
-public sealed record DienstInvoer(string? Taakomschrijving, int UrencorrectieKwartieren);
+/// <summary>Invoer voor het bijwerken van een dienst (taak, urencorrectie in kwartieren, dienstsoort).</summary>
+public sealed record DienstInvoer(string? Taakomschrijving, int UrencorrectieKwartieren, Dienstsoort Dienstsoort = Dienstsoort.Regulier);
 
 /// <summary>Invoer voor het handmatig toevoegen van een dienst aan de roosterweek.</summary>
 public sealed record DienstToevoegenInvoer(Guid MedewerkerId, Guid StamgroepId, DateOnly Datum);

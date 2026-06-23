@@ -1,7 +1,7 @@
 import { useState, type CSSProperties } from 'react';
 import { useRooster, useRoosterMutaties, useVerstuurdeRoosters } from '../api/queries';
 import { datumNl, korteDatum, vandaagIso, verschuifDagen, weekBeginIso } from '../datum';
-import { RoosterCelKleur, RoosterStatus, type RoosterCelDto } from '../types';
+import { Dienstsoort, DIENSTSOORT_LABEL, DIENSTSOORT_KORT, RoosterCelKleur, RoosterStatus, type RoosterCelDto } from '../types';
 
 const CEL_STYLE: Record<number, CSSProperties> = {
   [RoosterCelKleur.Leeg]: { background: 'var(--surface)', color: 'var(--text3)' },
@@ -17,6 +17,7 @@ interface EditState {
   naam: string;
   taak: string;
   kwartier: number;
+  dienstsoort: number;
 }
 
 export function RoosterPage() {
@@ -29,7 +30,7 @@ export function RoosterPage() {
 
   function celKlik(groepId: string, medewerkerId: string, naam: string, cel: RoosterCelDto) {
     if (cel.dienstId) {
-      setEdit({ dienstId: cel.dienstId, naam, taak: cel.taakomschrijving ?? '', kwartier: cel.urencorrectieKwartieren });
+      setEdit({ dienstId: cel.dienstId, naam, taak: cel.taakomschrijving ?? '', kwartier: cel.urencorrectieKwartieren, dienstsoort: cel.dienstsoort });
     } else if (cel.kleur === RoosterCelKleur.Leeg) {
       void dienstToevoegen.mutateAsync({ medewerkerId, stamgroepId: groepId, datum: cel.datum });
     }
@@ -37,7 +38,7 @@ export function RoosterPage() {
 
   async function bewaarEdit() {
     if (!edit) return;
-    await dienstBijwerken.mutateAsync({ id: edit.dienstId, invoer: { taakomschrijving: edit.taak || null, urencorrectieKwartieren: edit.kwartier } });
+    await dienstBijwerken.mutateAsync({ id: edit.dienstId, invoer: { taakomschrijving: edit.taak || null, urencorrectieKwartieren: edit.kwartier, dienstsoort: edit.dienstsoort } });
     setEdit(null);
   }
 
@@ -142,6 +143,11 @@ export function RoosterPage() {
                       {cel.dienstId ? (
                         <>
                           <div>{cel.taakomschrijving || 'dienst'}</div>
+                          {cel.dienstsoort !== Dienstsoort.Regulier && (
+                            <div style={{ fontSize: 9, fontWeight: 700, color: cel.dienstsoort === Dienstsoort.Vroege ? 'var(--teal)' : 'var(--indigo)' }}>
+                              {DIENSTSOORT_KORT[cel.dienstsoort]}
+                            </div>
+                          )}
                           {cel.urencorrectieKwartieren !== 0 && (
                             <div style={{ fontSize: 9, opacity: 0.7 }}>
                               {cel.urencorrectieKwartieren > 0 ? '+' : ''}
@@ -193,6 +199,14 @@ export function RoosterPage() {
               </button>
             </div>
             <div className="modal-b">
+              <div className="fld">
+                <label>Dienstsoort</label>
+                <select value={edit.dienstsoort} onChange={(e) => setEdit({ ...edit, dienstsoort: Number(e.target.value) })}>
+                  {DIENSTSOORT_LABEL.map((l, i) => (
+                    <option key={i} value={i}>{l}</option>
+                  ))}
+                </select>
+              </div>
               <div className="fld">
                 <label>Taakomschrijving</label>
                 <input value={edit.taak} onChange={(e) => setEdit({ ...edit, taak: e.target.value })} />

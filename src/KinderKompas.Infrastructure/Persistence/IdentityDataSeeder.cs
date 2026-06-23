@@ -71,6 +71,7 @@ public sealed class IdentityDataSeeder
     public async Task SeedAsync(bool isDevelopment, bool tweeFactorVerplichten, CancellationToken ct = default)
     {
         await SeedRollenAsync();
+        await VerwijderLegacyGroepsportaalAsync();
 
         foreach (AccountSeed account in Accounts)
         {
@@ -80,6 +81,21 @@ public sealed class IdentityDataSeeder
         await ReconcileTweeFactorAsync(tweeFactorVerplichten, ct);
         await SeedDemoKindAsync(ct);
         await BackfillRoosterbasisAsync(ct);
+    }
+
+    /// <summary>
+    /// Verwijdert het oude gedeelde "groepsportaal"-account (vóór de per-stamgroep-splitsing).
+    /// Dat account had geen vaste stamgroep en zag dus álle groepen — sinds er per groep een
+    /// eigen portaal-account is (Bengeltjes/Boefjes) moet het weg. Idempotent.
+    /// </summary>
+    private async Task VerwijderLegacyGroepsportaalAsync()
+    {
+        ApplicationUser? legacy = await _users.FindByNameAsync("groepsportaal");
+        if (legacy is not null)
+        {
+            await _users.DeleteAsync(legacy);
+            _log.LogWarning("Oud gedeeld 'groepsportaal'-account verwijderd (vervangen door per-stamgroep-accounts).");
+        }
     }
 
     /// <summary>

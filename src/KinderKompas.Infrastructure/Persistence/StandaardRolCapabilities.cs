@@ -64,6 +64,7 @@ public static class StandaardRolCapabilities
         [Rol.Groepsportaal] = new[]
         {
             Capabilities.MagOudergegevensZien,
+            Capabilities.MagKinderenLezen,
             Capabilities.MagPlanningZien,
             Capabilities.MagObservatiesVersturen,
             Capabilities.MagGroepsportaalGebruiken,

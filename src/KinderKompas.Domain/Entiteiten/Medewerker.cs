@@ -45,12 +45,6 @@ public class Medewerker : TenantEntiteit
     /// <summary>Einddatum bij een tijdelijk contract; null bij een vast contract.</summary>
     public DateOnly? Contracteinddatum { get; set; }
 
-    /// <summary>
-    /// Pincode waarmee de medewerker zichzelf op het Groepsportaal-tablet verifieert bij
-    /// het in-/uitklokken (4 cijfers). Null = nog geen pincode (verificatie overgeslagen).
-    /// </summary>
-    public string? Pincode { get; set; }
-
     /// <summary>Resterende contractmaanden t.o.v. een peildatum (tijdelijk contract), of null.</summary>
     public int? ResterendeContractmaanden(DateOnly peildatum)
     {

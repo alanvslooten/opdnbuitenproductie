@@ -1,3 +1,4 @@
+using KinderKompas.Api.Auth;
 using KinderKompas.Application.Abstractions;
 using KinderKompas.Application.Kinderen;
 using KinderKompas.Application.Observaties;
@@ -30,11 +31,13 @@ public sealed class GroepsportaalController : ControllerBase
 {
     private readonly KinderKompasDbContext _db;
     private readonly ICurrentUser _huidigeGebruiker;
+    private readonly WachtwoordChecker _wachtwoord;
 
-    public GroepsportaalController(KinderKompasDbContext db, ICurrentUser huidigeGebruiker)
+    public GroepsportaalController(KinderKompasDbContext db, ICurrentUser huidigeGebruiker, WachtwoordChecker wachtwoord)
     {
         _db = db;
         _huidigeGebruiker = huidigeGebruiker;
+        _wachtwoord = wachtwoord;
     }
 
     private static DateOnly Vandaag => DateOnly.FromDateTime(DateTime.UtcNow);
@@ -130,7 +133,8 @@ public sealed class GroepsportaalController : ControllerBase
             Naam(d.Medewerker),
             d.StamgroepId,
             d.Stamgroep?.Naam ?? "",
-            d.Taakomschrijving)).ToList();
+            d.Taakomschrijving,
+            d.Dienstsoort)).ToList();
 
         return Ok(new GroepsportaalDagDto(dag, week?.IsVerstuurd ?? false, regels));
     }
@@ -185,13 +189,16 @@ public sealed class GroepsportaalController : ControllerBase
             return BadRequest(new ProblemDetails { Title = "Onbekende medewerker", Detail = "De medewerker bestaat niet." });
         }
 
-        // Identiteitscheck: heeft de medewerker een pincode, dan moet die kloppen.
-        if (!string.IsNullOrEmpty(medewerker.Pincode) && invoer.Pincode?.Trim() != medewerker.Pincode)
+        // Identiteitscheck: de medewerker bevestigt met het eigen account-wachtwoord
+        // (hetzelfde als in het medewerkers-portaal). null = geen gekoppeld account, dan
+        // is verificatie niet mogelijk en klokt de medewerker zonder wachtwoord.
+        bool? wachtwoordKlopt = await _wachtwoord.KloptVoorMedewerkerAsync(medewerker.Id, invoer.Wachtwoord);
+        if (wachtwoordKlopt == false)
         {
             return Conflict(new ProblemDetails
             {
-                Title = "Onjuiste pincode",
-                Detail = "Voer je eigen pincode in om in te klokken.",
+                Title = "Onjuist wachtwoord",
+                Detail = "Voer je eigen wachtwoord in om in te klokken.",
             });
         }
 

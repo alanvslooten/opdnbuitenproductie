@@ -10,6 +10,8 @@ import {
 import { ApiFout } from '../api/client';
 import { datumNl, korteDatum, vandaagIso, verschuifDagen, weekBeginIso } from '../datum';
 import {
+  DIENSTSOORT_LABEL,
+  Dienstsoort,
   VERLOFCATEGORIE_LABEL,
   VERLOFSTATUS_LABEL,
   VerlofCategorie,
@@ -99,6 +101,11 @@ function MijnRooster({ weekBegin, setWeekBegin }: { weekBegin: string; setWeekBe
                     diensten.map((d) => (
                       <div key={d.stamgroepId} style={{ background: 'var(--blue-l)', color: 'var(--blue)', borderRadius: 5, padding: '4px 6px', fontSize: 10, fontWeight: 600, textAlign: 'center' }}>
                         {d.stamgroepNaam}
+                        {d.dienstsoort !== Dienstsoort.Regulier && (
+                          <div style={{ fontWeight: 700, color: d.dienstsoort === Dienstsoort.Vroege ? 'var(--teal)' : 'var(--indigo)' }}>
+                            {DIENSTSOORT_LABEL[d.dienstsoort]}
+                          </div>
+                        )}
                         {d.taakomschrijving && <div style={{ fontWeight: 400 }}>{d.taakomschrijving}</div>}
                         {d.urencorrectieKwartieren !== 0 && <div style={{ fontWeight: 400, opacity: 0.8 }}>{correctieLabel(d.urencorrectieKwartieren)}</div>}
                       </div>

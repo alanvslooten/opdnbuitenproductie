@@ -103,7 +103,6 @@ public class KinderKompasDbContext : IdentityDbContext<ApplicationUser>
             b.Property(m => m.Email).HasMaxLength(200);
             b.Property(m => m.NoodcontactNaam).HasMaxLength(200);
             b.Property(m => m.NoodcontactTelefoon).HasMaxLength(30);
-            b.Property(m => m.Pincode).HasMaxLength(10);
 
             // Vaste thuisgroep: optionele relatie. Restrict zodat een groep niet kan
             // verdwijnen terwijl er medewerkers aan hangen.

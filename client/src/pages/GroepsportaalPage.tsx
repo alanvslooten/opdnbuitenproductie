@@ -9,7 +9,7 @@ import {
   useStamgroepen,
 } from '../api/queries';
 import { ApiFout } from '../api/client';
-import type { KindDto } from '../types';
+import { Dienstsoort, DIENSTSOORT_LABEL, type KindDto } from '../types';
 import { datumNl, korteDatum, vandaagIso, verschuifDagen } from '../datum';
 
 function tijd(iso: string): string {
@@ -161,7 +161,14 @@ function DienstVanDeDag({ datum }: { datum: string }) {
                 <div key={d.dienstId} className="tl-item">
                   <span className="tl-dot" style={{ background: 'var(--blue)' }} />
                   <div className="tl-body" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <h5>{d.medewerkerNaam}</h5>
+                    <h5>
+                      {d.medewerkerNaam}
+                      {d.dienstsoort !== Dienstsoort.Regulier && (
+                        <span className={`badge ${d.dienstsoort === Dienstsoort.Vroege ? 'b-blue' : 'b-violet'}`} style={{ marginLeft: 6 }}>
+                          {DIENSTSOORT_LABEL[d.dienstsoort]}
+                        </span>
+                      )}
+                    </h5>
                     <p>
                       {d.stamgroepNaam}
                       {d.taakomschrijving && <span> — {d.taakomschrijving}</span>}
@@ -187,14 +194,14 @@ function Inklokken({ datum }: { datum: string }) {
 
   const [medewerkerId, setMedewerkerId] = useState('');
   const [stamgroepId, setStamgroepId] = useState('');
-  const [pincode, setPincode] = useState('');
+  const [wachtwoord, setWachtwoord] = useState('');
   const vandaag = vandaagIso();
 
   function inklok() {
     if (!medewerkerId) return;
     inklokken.mutate(
-      { medewerkerId, stamgroepId: stamgroepId || null, roosterdienstId: null, pincode: pincode || null },
-      { onSuccess: () => { setMedewerkerId(''); setPincode(''); } },
+      { medewerkerId, stamgroepId: stamgroepId || null, roosterdienstId: null, wachtwoord: wachtwoord || null },
+      { onSuccess: () => { setMedewerkerId(''); setWachtwoord(''); } },
     );
   }
 
@@ -228,14 +235,13 @@ function Inklokken({ datum }: { datum: string }) {
               ))}
             </select>
           </div>
-          <div className="fld" style={{ marginBottom: 0, width: 110 }}>
-            <label>Pincode</label>
+          <div className="fld" style={{ marginBottom: 0, width: 140 }}>
+            <label>Wachtwoord</label>
             <input
               type="password"
-              inputMode="numeric"
-              value={pincode}
-              placeholder="••••"
-              onChange={(e) => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              value={wachtwoord}
+              placeholder="eigen wachtwoord"
+              onChange={(e) => setWachtwoord(e.target.value)}
             />
           </div>
           <button onClick={inklok} disabled={!medewerkerId || inklokken.isPending} className="btn btn-primary btn-sm">

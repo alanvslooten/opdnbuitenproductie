@@ -8,14 +8,14 @@ import { Capabilities, ROL_WEERGAVE } from '../types';
 // Elke link is gekoppeld aan de capability die het bijbehorende endpoint vereist
 // (ongewijzigd t.o.v. de vorige navigatie) en gegroepeerd in secties + een
 // Tabler-icoon, zodat de look overeenkomt met het bijgevoegde ontwerp.
-type Link = { naar: string; label: string; cap: string; icon: string; sectie: string };
+type Link = { naar: string; label: string; cap: string; ofCap?: string; icon: string; sectie: string };
 
 const links: Link[] = [
   { naar: '/dashboard', label: 'Dashboard', cap: Capabilities.DashboardZien, icon: 'ti-dashboard', sectie: 'Overzicht' },
   { naar: '/planning', label: 'Weekplanning', cap: Capabilities.PlanningZien, icon: 'ti-calendar-week', sectie: 'Kinderen' },
   { naar: '/maandplanning', label: 'Maandplanning', cap: Capabilities.PlanningZien, icon: 'ti-calendar-month', sectie: 'Kinderen' },
   { naar: '/dagfilter', label: 'Dagfilter', cap: Capabilities.PlanningZien, icon: 'ti-filter', sectie: 'Kinderen' },
-  { naar: '/kinderen', label: 'Kinderen', cap: Capabilities.KinderenBeheren, icon: 'ti-mood-kid', sectie: 'Kinderen' },
+  { naar: '/kinderen', label: 'Kinderen', cap: Capabilities.KinderenBeheren, ofCap: Capabilities.KinderenLezen, icon: 'ti-mood-kid', sectie: 'Kinderen' },
   { naar: '/observaties', label: 'Observaties', cap: Capabilities.ObservatiesVersturen, icon: 'ti-clipboard-check', sectie: 'Kinderen' },
   { naar: '/stamgroepen', label: 'Stamgroepen', cap: Capabilities.KinderenBeheren, icon: 'ti-layout-grid', sectie: 'Kinderen' },
   { naar: '/bkr', label: 'BKR Calculator', cap: Capabilities.DashboardZien, icon: 'ti-calculator', sectie: 'Overzicht' },
@@ -43,7 +43,7 @@ export function Layout() {
   const [open, setOpen] = useState(false);
   const [thema, setThemaState] = useState<Thema>(huidigThema());
 
-  const zichtbareLinks = links.filter((l) => heeft(l.cap));
+  const zichtbareLinks = links.filter((l) => heeft(l.cap) || (l.ofCap != null && heeft(l.ofCap)));
   const actief = zichtbareLinks.find((l) => location.pathname.startsWith(l.naar));
   const titel = actief?.label ?? 'KinderKompas';
   // Een groepsportaal-account is geen persoon maar een groep-tablet: toon de

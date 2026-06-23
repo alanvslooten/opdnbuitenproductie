@@ -1,4 +1,5 @@
 using FluentValidation;
+using KinderKompas.Api.Auth;
 using KinderKompas.Api.Validatie;
 using KinderKompas.Application.Abstractions;
 using KinderKompas.Application.Kinderen;
@@ -19,29 +20,43 @@ namespace KinderKompas.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/kinderen")]
-[Authorize(Policy = Capabilities.MagKinderenBeheren)]
+[Authorize]
 public sealed class KinderenController : ControllerBase
 {
     private readonly KinderKompasDbContext _db;
     private readonly ICurrentUser _huidigeGebruiker;
     private readonly IValidator<KindInvoer> _validator;
+    private readonly WachtwoordChecker _wachtwoord;
 
     public KinderenController(
-        KinderKompasDbContext db, ICurrentUser huidigeGebruiker, IValidator<KindInvoer> validator)
+        KinderKompasDbContext db, ICurrentUser huidigeGebruiker, IValidator<KindInvoer> validator,
+        WachtwoordChecker wachtwoord)
     {
         _db = db;
         _huidigeGebruiker = huidigeGebruiker;
         _validator = validator;
+        _wachtwoord = wachtwoord;
     }
 
     private static DateOnly Vandaag => DateOnly.FromDateTime(DateTime.UtcNow);
 
+    /// <summary>
+    /// Voor een Groepsportaal-account (alleen-lezen) zijn kinderen beperkt tot de eigen
+    /// stamgroep; back-office (KinderenBeheren) ziet alle groepen.
+    /// </summary>
+    private Guid? PortaalGroep =>
+        _huidigeGebruiker.Heeft(Capabilities.MagGroepsportaalGebruiken) && !_huidigeGebruiker.Heeft(Capabilities.MagKinderenBeheren)
+            ? _huidigeGebruiker.StamgroepId
+            : null;
+
     [HttpGet]
+    [Authorize(Policy = AutorisatieBeleid.KinderenLezen)]
     public async Task<ActionResult<IReadOnlyList<KindDto>>> Lijst(
         [FromQuery] Guid? stamgroepId, CancellationToken ct)
     {
+        Guid? effectieveGroep = PortaalGroep ?? stamgroepId;
         var query = _db.Kinderen.AsNoTracking();
-        if (stamgroepId is { } gid)
+        if (effectieveGroep is { } gid)
         {
             query = query.Where(k => k.StamgroepId == gid);
         }
@@ -57,15 +72,24 @@ public sealed class KinderenController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [Authorize(Policy = AutorisatieBeleid.KinderenLezen)]
     public async Task<ActionResult<KindDto>> Detail(Guid id, CancellationToken ct)
     {
         Kind? kind = await _db.Kinderen.AsNoTracking().FirstOrDefaultAsync(k => k.Id == id, ct);
-        return kind is null
-            ? NotFound()
-            : Ok(KindMapper.NaarDto(kind, _huidigeGebruiker, Vandaag));
+        if (kind is null)
+        {
+            return NotFound();
+        }
+        // Een gescoped portaal mag alleen de eigen-groep-kinderen inzien.
+        if (PortaalGroep is { } gid && kind.StamgroepId != gid)
+        {
+            return NotFound();
+        }
+        return Ok(KindMapper.NaarDto(kind, _huidigeGebruiker, Vandaag));
     }
 
     [HttpPost]
+    [Authorize(Policy = Capabilities.MagKinderenBeheren)]
     public async Task<ActionResult<KindDto>> Aanmaken(KindInvoer invoer, CancellationToken ct)
     {
         if (await _validator.ValideerAsync(invoer, this, ct) is { } fout)
@@ -93,6 +117,7 @@ public sealed class KinderenController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Policy = Capabilities.MagKinderenBeheren)]
     public async Task<ActionResult<KindDto>> Bewerken(Guid id, KindInvoer invoer, CancellationToken ct)
     {
         if (await _validator.ValideerAsync(invoer, this, ct) is { } fout)
@@ -118,8 +143,19 @@ public sealed class KinderenController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> Verwijderen(Guid id, CancellationToken ct)
+    [Authorize(Policy = Capabilities.MagKinderenBeheren)]
+    public async Task<IActionResult> Verwijderen(Guid id, [FromBody] BevestigInvoer? invoer, CancellationToken ct)
     {
+        // Kritieke data: bevestig met het wachtwoord van de ingelogde beheerder.
+        if (!await _wachtwoord.KloptHuidigeGebruikerAsync(invoer?.Wachtwoord))
+        {
+            return Conflict(new ProblemDetails
+            {
+                Title = "Bevestiging vereist",
+                Detail = "Voer je wachtwoord in om dit kind te verwijderen.",
+            });
+        }
+
         Kind? kind = await _db.Kinderen.FirstOrDefaultAsync(k => k.Id == id, ct);
         if (kind is null)
         {

@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useContact, useContacten, useContactMutaties } from '../api/queries';
 import { ApiFout } from '../api/client';
+import { BevestigWachtwoordDialog } from '../components/BevestigWachtwoordDialog';
 import { datumNl, vandaagIso } from '../datum';
 import {
   RondleidingStatus,
@@ -25,20 +26,22 @@ export function ContactenPage() {
   const [zoek, setZoek] = useState('');
   const [detailId, setDetailId] = useState<string | null>(null);
   const [form, setForm] = useState<{ id?: string; invoer: ContactInvoer } | null>(null);
-  const [fout, setFout] = useState<string | null>(null);
+  const [verwijderDoel, setVerwijderDoel] = useState<ContactDto | null>(null);
+  const [verwijderFout, setVerwijderFout] = useState<string | null>(null);
 
   const term = zoek.trim().toLowerCase();
   const zichtbaar = (data ?? []).filter(
     (c) => !term || c.volledigeNaam.toLowerCase().includes(term),
   );
 
-  async function verwijder(c: ContactDto) {
-    setFout(null);
-    if (!confirm(`Contact "${c.volledigeNaam}" verwijderen? Gekoppelde kinderen/inschrijvingen blijven bestaan.`)) return;
+  async function bevestigVerwijderen(wachtwoord: string) {
+    if (!verwijderDoel) return;
+    setVerwijderFout(null);
     try {
-      await verwijderen.mutateAsync(c.id);
+      await verwijderen.mutateAsync({ id: verwijderDoel.id, wachtwoord });
+      setVerwijderDoel(null);
     } catch (err) {
-      setFout(err instanceof ApiFout ? err.message : 'Verwijderen mislukt.');
+      setVerwijderFout(err instanceof ApiFout ? err.message : 'Verwijderen mislukt.');
     }
   }
 
@@ -56,12 +59,6 @@ export function ContactenPage() {
         </div>
       </div>
 
-      {fout && (
-        <div className="alert alert-bad">
-          <i className="ti ti-alert-circle" />
-          <span>{fout}</span>
-        </div>
-      )}
 
       <div className="filters">
         <div className="search-box" style={{ maxWidth: 280 }}>
@@ -84,9 +81,9 @@ export function ContactenPage() {
               <th>Naam</th>
               <th>Type</th>
               <th>Telefoon</th>
-              <th title="Rondleidingen">Rondl.</th>
-              <th title="Wachtlijst-inschrijvingen">Insch.</th>
-              <th title="Geplaatste kinderen">Kind.</th>
+              <th>Rondleidingen</th>
+              <th>Inschrijvingen</th>
+              <th>Geplaatste kinderen</th>
               <th />
             </tr>
           </thead>
@@ -112,7 +109,7 @@ export function ContactenPage() {
                   <button onClick={() => setForm({ id: c.id, invoer: invoerVan(c) })} className="btn btn-outline btn-xs" style={{ marginRight: 6 }}>
                     <i className="ti ti-pencil" />
                   </button>
-                  <button onClick={() => verwijder(c)} className="btn btn-rose btn-xs">
+                  <button onClick={() => { setVerwijderFout(null); setVerwijderDoel(c); }} className="btn btn-rose btn-xs">
                     <i className="ti ti-trash" />
                   </button>
                 </td>
@@ -131,6 +128,16 @@ export function ContactenPage() {
 
       {detailId && <ContactDetailModal id={detailId} onSluit={() => setDetailId(null)} />}
       {form && <ContactFormModal start={form} onSluit={() => setForm(null)} />}
+      {verwijderDoel && (
+        <BevestigWachtwoordDialog
+          titel="Contact verwijderen"
+          bericht={`Weet je zeker dat je "${verwijderDoel.volledigeNaam}" wilt verwijderen? Gekoppelde kinderen en inschrijvingen blijven bestaan. Bevestig met je wachtwoord.`}
+          bezig={verwijderen.isPending}
+          fout={verwijderFout}
+          onBevestig={bevestigVerwijderen}
+          onSluit={() => setVerwijderDoel(null)}
+        />
+      )}
     </div>
   );
 }

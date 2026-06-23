@@ -374,6 +374,11 @@ export const VERLOFSTATUS_LABEL = ['Openstaand', 'Goedgekeurd', 'Afgekeurd'];
 /** Roosterstatus: 0=Concept, 1=Verstuurd. */
 export const RoosterStatus = { Concept: 0, Verstuurd: 1 } as const;
 
+/** Dienstsoort: 0=Regulier, 1=Vroege (openen), 2=Late (sluiten). */
+export const Dienstsoort = { Regulier: 0, Vroege: 1, Late: 2 } as const;
+export const DIENSTSOORT_LABEL = ['Regulier', 'Vroege dienst', 'Late dienst'];
+export const DIENSTSOORT_KORT = ['', 'Vroeg', 'Laat'];
+
 /** BKR-indicatorkleur: 0=Groen, 1=Oranje, 2=Rood. */
 export const BkrIndicatorKleur = { Groen: 0, Oranje: 1, Rood: 2 } as const;
 
@@ -404,7 +409,6 @@ export interface MedewerkerDto {
   contractbegindatum: Iso | null;
   contracteinddatum: Iso | null;
   resterendeContractmaanden: number | null;
-  heeftPincode: boolean;
 }
 
 export interface MedewerkerInvoer {
@@ -422,7 +426,6 @@ export interface MedewerkerInvoer {
   contractVast?: boolean;
   contractbegindatum?: Iso | null;
   contracteinddatum?: Iso | null;
-  pincode?: string | null;
 }
 
 export interface UrenWeekDto {
@@ -509,6 +512,7 @@ export interface RoosterCelDto {
   dienstId: string | null;
   taakomschrijving: string | null;
   urencorrectieKwartieren: number;
+  dienstsoort: number;
 }
 
 export interface RoosterMedewerkerRijDto {
@@ -553,6 +557,7 @@ export interface RoosterWeekDto {
 export interface DienstInvoer {
   taakomschrijving: string | null;
   urencorrectieKwartieren: number;
+  dienstsoort: number;
 }
 
 // === Fase 8 — portalen (groepsportaal & thuis-portaal) ===
@@ -561,6 +566,7 @@ export interface DienstInvoer {
 export const Capabilities = {
   OudergegevensZien: 'MagOudergegevensZien',
   KinderenBeheren: 'MagKinderenBeheren',
+  KinderenLezen: 'MagKinderenLezen',
   PlanningZien: 'MagPlanningZien',
   WachtlijstBeheren: 'MagWachtlijstBeheren',
   RoosterBeheren: 'MagRoosterBeheren',
@@ -582,6 +588,7 @@ export interface ThuisRoosterDagDto {
   stamgroepNaam: string;
   taakomschrijving: string | null;
   urencorrectieKwartieren: number;
+  dienstsoort: number;
 }
 
 export interface ThuisRoosterDto {
@@ -628,6 +635,7 @@ export interface DagdienstDto {
   stamgroepId: string;
   stamgroepNaam: string;
   taakomschrijving: string | null;
+  dienstsoort: number;
 }
 
 export interface GroepsportaalDagDto {
@@ -655,7 +663,7 @@ export interface InklokInvoer {
   medewerkerId: string;
   roosterdienstId: string | null;
   stamgroepId: string | null;
-  pincode?: string | null;
+  wachtwoord?: string | null;
 }
 
 // === Fase 9 — actiecentrum, dashboard & instellingen ===
