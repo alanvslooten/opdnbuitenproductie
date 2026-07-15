@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   useGroepsportaalDashboard,
   useGroepsportaalDienst,
@@ -101,8 +102,17 @@ export function GroepsportaalPage() {
       </div>
 
       <Dashboard datum={datum} />
-      <DienstVanDeDag datum={datum} />
-      <Inklokken datum={datum} />
+
+      {/* Klokken is een eigen submenu-item ("Klokken") met het rooster/dienst erin —
+          hier alleen een prominente snelkoppeling, groot genoeg voor de groepstablet. */}
+      <Link
+        to="/klok"
+        className="btn btn-primary"
+        style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, fontSize: 18, padding: '16px', marginBottom: 14 }}
+      >
+        <i className="ti ti-clock-play" style={{ fontSize: 22 }} /> Naar klokken (dienst starten / beëindigen)
+      </Link>
+
       <KinderenOpLocatie />
     </div>
   );
@@ -140,7 +150,7 @@ function Dashboard({ datum }: { datum: string }) {
   );
 }
 
-function DienstVanDeDag({ datum }: { datum: string }) {
+export function DienstVanDeDag({ datum }: { datum: string }) {
   const { data, isLoading } = useGroepsportaalDienst(datum);
 
   return (
@@ -186,7 +196,7 @@ function DienstVanDeDag({ datum }: { datum: string }) {
   );
 }
 
-function Inklokken({ datum }: { datum: string }) {
+export function Inklokken({ datum }: { datum: string }) {
   const { data: medewerkers } = useGroepsportaalMedewerkers();
   const { data: stamgroepen } = useStamgroepen();
   const { data: registraties, isLoading } = useGroepsportaalUren(datum);

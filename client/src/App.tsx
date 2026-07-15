@@ -23,6 +23,7 @@ import { BkrCalculatorPage } from './pages/BkrCalculatorPage';
 import { GroepsportaalPage } from './pages/GroepsportaalPage';
 import { ThuisportaalPage } from './pages/ThuisportaalPage';
 import { KennisbankPage } from './pages/KennisbankPage';
+import { KlokPage } from './pages/KlokPage';
 import { PubliekAanmeldPage } from './pages/PubliekAanmeldPage';
 import { PubliekRondleidingPage } from './pages/PubliekRondleidingPage';
 import { Capabilities } from './types';
@@ -92,6 +93,7 @@ export default function App() {
         <Route path="/wachtlijst/:id" element={<WachtlijstFormPage />} />
         <Route path="/kennisbank" element={<KennisbankPage />} />
         <Route path="/groepsportaal" element={<GroepsportaalPage />} />
+        <Route path="/klok" element={<KlokPage />} />
         <Route path="/thuisportaal" element={<ThuisportaalPage />} />
         <Route path="*" element={<Navigate to={startpagina} replace />} />
       </Route>

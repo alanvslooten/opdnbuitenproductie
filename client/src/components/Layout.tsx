@@ -27,6 +27,7 @@ const links: Link[] = [
   { naar: '/medewerkers', label: 'Medewerkers', cap: Capabilities.MedewerkersBeheren, icon: 'ti-users', sectie: 'Personeel' },
   { naar: '/instellingen', label: 'Instellingen', cap: Capabilities.InstellingenBeheren, icon: 'ti-settings', sectie: 'Beheer' },
   { naar: '/groepsportaal', label: 'Groepsportaal', cap: Capabilities.GroepsportaalGebruiken, icon: 'ti-device-tablet', sectie: 'Portalen' },
+  { naar: '/klok', label: 'Klokken', cap: Capabilities.GroepsportaalGebruiken, icon: 'ti-clock-play', sectie: 'Portalen' },
   { naar: '/thuisportaal', label: 'Mijn portaal', cap: Capabilities.ThuisportaalGebruiken, icon: 'ti-home', sectie: 'Portalen' },
   { naar: '/kennisbank', label: 'Kennisbank', cap: Capabilities.ThuisportaalGebruiken, icon: 'ti-book', sectie: 'Portalen' },
 ];
