@@ -121,4 +121,32 @@ public class VoorstelAnalyseBouwerTests
         Assert.Null(analyse.KandidaatLeeftijdsgroep);
         Assert.Null(Assert.Single(analyse.Dagen).VereistePmersNa);
     }
+
+    [Fact]
+    public void Bouw_TeltOpenstaandeVoorstellenMeeInDeBezettingEnBkr()
+    {
+        Guid groepId = Guid.NewGuid();
+        var groep = new Stamgroep { Id = groepId, Naam = "Bengeltjes", MaxKinderen = 12 };
+        // Drie baby's al geplaatst. Twee openstaande voorstellen (elk een baby op maandag)
+        // moeten als voorlopige bezetting meetellen, zodat de BKR-baseline voller is.
+        groep.Kinderen = new List<Kind> { Baby(groepId), Baby(groepId), Baby(groepId) };
+        var openVoorstelKinderen = new List<Kind> { Baby(groepId), Baby(groepId) };
+
+        var zonder = VoorstelAnalyseBouwer.Bouw(
+            Kandidaat(Weekdag.Maandag), groep, Array.Empty<Schoolvakantie>());
+        var met = VoorstelAnalyseBouwer.Bouw(
+            Kandidaat(Weekdag.Maandag), groep, Array.Empty<Schoolvakantie>(),
+            peilStartdatum: null, openVoorstelKinderen: openVoorstelKinderen);
+
+        VoorstelDagAnalyseDto zonderMa = Assert.Single(zonder.Dagen);
+        VoorstelDagAnalyseDto metMa = Assert.Single(met.Dagen);
+
+        // Zonder meetellen: 3 aanwezig. Mét: 3 + 2 voorlopige = 5 aanwezig op maandag.
+        Assert.Equal(3, zonderMa.AantalAanwezigNu);
+        Assert.Equal(5, metMa.AantalAanwezigNu);
+        Assert.Equal(0, zonder.OpenVoorstellenMeegeteld);
+        Assert.Equal(2, met.OpenVoorstellenMeegeteld);
+        // De projectie ná plaatsing telt door op de vollere baseline: 5 + kandidaat = 6.
+        Assert.Equal(6, metMa.AantalAanwezigNa);
+    }
 }

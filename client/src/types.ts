@@ -278,6 +278,7 @@ export interface VoorstelAnalyseDto {
   groepBlijftOnderMax: boolean;
   kandidaatBuitenOpvangleeftijd: boolean;
   kandidaatLeeftijdsgroep: number | null;
+  openVoorstellenMeegeteld: number;
   dagen: VoorstelDagAnalyseDto[];
 }
 

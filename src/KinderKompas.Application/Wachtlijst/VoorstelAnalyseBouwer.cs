@@ -32,11 +32,18 @@ public static class VoorstelAnalyseBouwer
     /// startdatum van de inschrijving). Laat de planner de impact van een andere
     /// ingangsdatum bekijken.
     /// </param>
+    /// <param name="openVoorstelKinderen">
+    /// Voorlopige bezetting uit nog OPENSTAANDE (verstuurde, niet-geaccepteerde)
+    /// voorstellen voor deze groep, als transiënte kinderen. Ze tellen mee in de
+    /// bezetting en BKR per dag, zodat twee tegelijk lopende voorstellen niet samen
+    /// ongemerkt de BKR overschrijden. <c>null</c> = niets extra meetellen.
+    /// </param>
     public static VoorstelAnalyseDto Bouw(
         WachtlijstInschrijving inschrijving,
         Stamgroep doelStamgroep,
         IEnumerable<Schoolvakantie> vakanties,
-        DateOnly? peilStartdatum = null)
+        DateOnly? peilStartdatum = null,
+        IEnumerable<Kind>? openVoorstelKinderen = null)
     {
         ArgumentNullException.ThrowIfNull(inschrijving);
         ArgumentNullException.ThrowIfNull(doelStamgroep);
@@ -47,6 +54,12 @@ public static class VoorstelAnalyseBouwer
             vakanties as IReadOnlyList<Schoolvakantie> ?? vakanties.ToList();
         IReadOnlyList<Kind> geplaatst =
             doelStamgroep.Kinderen as IReadOnlyList<Kind> ?? doelStamgroep.Kinderen.ToList();
+        IReadOnlyList<Kind> voorlopig =
+            openVoorstelKinderen as IReadOnlyList<Kind> ?? openVoorstelKinderen?.ToList() ?? [];
+
+        // De bezetting die per dag telt = de al geplaatste kinderen + de voorlopige
+        // kinderen uit openstaande voorstellen (zo blijft de BKR-projectie eerlijk).
+        IReadOnlyList<Kind> bezetting = voorlopig.Count == 0 ? geplaatst : geplaatst.Concat(voorlopig).ToList();
 
         bool kandidaatBuitenLeeftijd =
             !Leeftijdscategorie.ProbeerBepaal(inschrijving.Geboortedatum, start, out Leeftijdscategorie cat);
@@ -60,10 +73,11 @@ public static class VoorstelAnalyseBouwer
                 continue;
             }
 
-            dagen.Add(BouwDag(dag, start, inschrijving, geplaatst, vakantieLijst, doelStamgroep.MaxKinderen));
+            dagen.Add(BouwDag(dag, start, inschrijving, bezetting, vakantieLijst, doelStamgroep.MaxKinderen));
         }
 
-        int aantalGeplaatst = geplaatst.Count;
+        // De groepsgrootte-check op stamgroepniveau telt óók de voorlopige plaatsingen mee.
+        int aantalBezet = bezetting.Count;
 
         return new VoorstelAnalyseDto(
             inschrijving.Id,
@@ -75,10 +89,11 @@ public static class VoorstelAnalyseBouwer
             doelStamgroep.Id,
             doelStamgroep.Naam,
             doelStamgroep.MaxKinderen,
-            aantalGeplaatst,
-            doelStamgroep.HeeftPlaatsVoorExtraKind(aantalGeplaatst),
+            aantalBezet,
+            doelStamgroep.HeeftPlaatsVoorExtraKind(aantalBezet),
             kandidaatBuitenLeeftijd,
             kandidaatGroep,
+            voorlopig.Count,
             dagen);
     }
 

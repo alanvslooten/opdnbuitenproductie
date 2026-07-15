@@ -229,8 +229,34 @@ public sealed class WachtlijstController : ControllerBase
 
         var vakanties = await _db.Schoolvakanties.AsNoTracking().ToListAsync(ct);
 
+        // Nog OPENSTAANDE voorstellen voor deze groep (van andere inschrijvingen) tellen
+        // mee als voorlopige bezetting, zodat twee tegelijk lopende voorstellen niet samen
+        // ongemerkt de BKR overschrijden. Elk wordt een transiënt kind op zijn voorgestelde
+        // dagen vanaf de vroegste voorgestelde datum.
+        var openVoorstellen = await _db.Voorstellen.AsNoTracking()
+            .Include(v => v.Dagen)
+            .Include(v => v.WachtlijstInschrijving)
+            .Where(v => v.VoorgesteldeStamgroepId == groepId
+                && v.Status == VoorstelStatus.Verstuurd
+                && v.WachtlijstInschrijvingId != id)
+            .ToListAsync(ct);
+
+        var openVoorstelKinderen = openVoorstellen
+            .Where(v => v.WachtlijstInschrijving is not null && v.Dagen.Count > 0)
+            .Select(v => new Kind
+            {
+                Voornaam = "Voorstel",
+                Achternaam = "(openstaand)",
+                Geboortedatum = v.WachtlijstInschrijving!.Geboortedatum,
+                Contracttype = v.WachtlijstInschrijving.Contracttype,
+                GewensteOpvangdagen = v.VoorgesteldeDagen,
+                Startdatum = v.Dagen.Min(d => d.VoorgesteldeDatum),
+                StamgroepId = groepId,
+            })
+            .ToList();
+
         VoorstelAnalyseDto analyse = VoorstelAnalyseBouwer.Bouw(
-            inschrijving, doelStamgroep, vakanties, startdatum);
+            inschrijving, doelStamgroep, vakanties, startdatum, openVoorstelKinderen);
         return Ok(analyse);
     }
 

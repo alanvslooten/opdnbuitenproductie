@@ -154,6 +154,18 @@ export function VoorstelDialog({
             </div>
           )}
 
+          {analyse && analyse.openVoorstellenMeegeteld > 0 && (
+            <div className="alert alert-warn" style={{ marginBottom: 0 }}>
+              <i className="ti ti-alert-triangle" />
+              <span>
+                {analyse.openVoorstellenMeegeteld} nog openstaand voorstel
+                {analyse.openVoorstellenMeegeteld > 1 ? 'len' : ''} voor deze groep{' '}
+                {analyse.openVoorstellenMeegeteld > 1 ? 'zijn' : 'is'} als voorlopige bezetting meegeteld,
+                zodat de BKR niet ongemerkt wordt overschreden.
+              </span>
+            </div>
+          )}
+
           {analyse?.kandidaatBuitenOpvangleeftijd && (
             <div className="alert alert-warn" style={{ marginBottom: 0 }}>
               <i className="ti ti-alert-triangle" />

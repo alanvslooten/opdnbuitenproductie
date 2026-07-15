@@ -24,6 +24,9 @@ public sealed record VoorstelAnalyseDto(
     bool GroepBlijftOnderMax,
     bool KandidaatBuitenOpvangleeftijd,
     Leeftijdsgroep? KandidaatLeeftijdsgroep,
+    // Aantal voorlopige plaatsingen uit nog openstaande voorstellen dat is meegeteld
+    // in de bezetting/BKR (>0 = let op dubbele plaatsing / stille BKR-overschrijding).
+    int OpenVoorstellenMeegeteld,
     IReadOnlyList<VoorstelDagAnalyseDto> Dagen);
 
 /// <summary>De BKR- en plek-analyse voor één gewenste opvangdag.</summary>
