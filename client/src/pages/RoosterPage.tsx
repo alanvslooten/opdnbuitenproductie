@@ -212,9 +212,16 @@ export function RoosterPage() {
                 <input value={edit.taak} onChange={(e) => setEdit({ ...edit, taak: e.target.value })} />
               </div>
               <div className="fld" style={{ marginBottom: 0 }}>
-                <label>Urencorrectie (kwartieren, +/–)</label>
-                <input type="number" step={1} value={edit.kwartier} onChange={(e) => setEdit({ ...edit, kwartier: Number(e.target.value) })} />
-                <span style={{ fontSize: 10, color: 'var(--text3)' }}>{edit.kwartier / 4} uur</span>
+                <label>Urencorrectie (uren, +/–)</label>
+                <input
+                  type="number"
+                  step={0.25}
+                  value={edit.kwartier / 4}
+                  onChange={(e) => setEdit({ ...edit, kwartier: Math.round(Number(e.target.value) * 4) })}
+                />
+                <span style={{ fontSize: 10, color: 'var(--text3)' }}>
+                  stappen van 0,25 uur ({edit.kwartier} kwartier)
+                </span>
               </div>
             </div>
             <div className="modal-f" style={{ justifyContent: 'space-between' }}>

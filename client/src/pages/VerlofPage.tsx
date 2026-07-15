@@ -22,6 +22,7 @@ export function VerlofPage() {
   const { data: medewerkers } = useMedewerkers();
   const [medewerkerId, setMedewerkerId] = useState('');
   const [statusFilter, setStatusFilter] = useState<number | ''>('');
+  const [periode, setPeriode] = useState<'aankomend' | 'verleden'>('aankomend');
   const [fout, setFout] = useState<string | null>(null);
 
   const { data: saldi } = useVerlofsaldo(medewerkerId || undefined);
@@ -33,6 +34,13 @@ export function VerlofPage() {
   const [aanvraag, setAanvraag] = useState({ begindatum: vandaagIso(), einddatum: vandaagIso(), aantalUren: 8, categorie: 0, reden: '' });
   const [saldoForm, setSaldoForm] = useState({ categorie: 0, toegekendeUren: 0, vervaldatum: '' });
   const [ziek, setZiek] = useState({ begindatum: vandaagIso(), einddatum: '' });
+
+  // Aankomend vs. verleden: verstreken aanvragen verdwijnen niet, maar schuiven naar
+  // het 'verleden'-tabblad; het actieve overzicht toont standaard alleen aankomend.
+  const vandaag = vandaagIso();
+  const zichtbareAanvragen = (aanvragen ?? []).filter((a) =>
+    periode === 'aankomend' ? a.einddatum.slice(0, 10) >= vandaag : a.einddatum.slice(0, 10) < vandaag,
+  );
 
   async function wrap(fn: () => Promise<unknown>, melding: string) {
     setFout(null);
@@ -222,8 +230,24 @@ export function VerlofPage() {
       )}
 
       {/* Archief */}
-      <div className="ph" style={{ marginBottom: 10 }}>
+      <div className="ph" style={{ marginBottom: 10, gap: 8, flexWrap: 'wrap' }}>
         <h1 style={{ fontSize: 15 }}>Verlofarchief</h1>
+        <div className="seg" role="tablist" style={{ display: 'inline-flex', gap: 4 }}>
+          <button
+            type="button"
+            className={`btn btn-sm ${periode === 'aankomend' ? 'btn-primary' : 'btn-outline'}`}
+            onClick={() => setPeriode('aankomend')}
+          >
+            Aankomend
+          </button>
+          <button
+            type="button"
+            className={`btn btn-sm ${periode === 'verleden' ? 'btn-primary' : 'btn-outline'}`}
+            onClick={() => setPeriode('verleden')}
+          >
+            Verleden
+          </button>
+        </div>
         <select className="inp" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value === '' ? '' : Number(e.target.value))}>
           <option value="">Alle statussen</option>
           {VERLOFSTATUS_LABEL.map((l, i) => (
@@ -246,7 +270,14 @@ export function VerlofPage() {
             </tr>
           </thead>
           <tbody>
-            {aanvragen?.map((a) => (
+            {zichtbareAanvragen.length === 0 && (
+              <tr>
+                <td colSpan={6} style={{ textAlign: 'center', color: 'var(--text3)', padding: '18px 0' }}>
+                  Geen {periode === 'aankomend' ? 'aankomende' : 'verstreken'} aanvragen.
+                </td>
+              </tr>
+            )}
+            {zichtbareAanvragen.map((a) => (
               <tr key={a.id} style={{ verticalAlign: 'top' }}>
                 <td>{a.medewerkerNaam}</td>
                 <td>
