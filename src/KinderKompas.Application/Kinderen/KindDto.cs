@@ -24,7 +24,7 @@ public sealed record KindDto(
     Guid? MentorId,
     IReadOnlyList<OudercontactDto> Oudercontacten);
 
-public sealed record OudercontactDto(string Naam, string Telefoon, string Email);
+public sealed record OudercontactDto(string Naam, string Telefoon, string Email, string Rol = "");
 
 /// <summary>
 /// Invoermodel voor het aanmaken/bewerken van een kind. <see cref="Einddatum"/> is

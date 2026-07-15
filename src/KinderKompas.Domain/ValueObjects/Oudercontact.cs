@@ -8,4 +8,8 @@ namespace KinderKompas.Domain.ValueObjects;
 /// DTO-projectie (deze gegevens worden niet eens meegestuurd naar het
 /// thuis-portaal).
 /// </summary>
-public sealed record Oudercontact(string Naam, string Telefoon, string Email);
+/// <param name="Rol">
+/// De relatie tot het kind (bijv. "mama", "papa", "tante", "goede vriendin").
+/// Optioneel; leeg als niet ingevuld. De eerste in de lijst blijft het primaire contact.
+/// </param>
+public sealed record Oudercontact(string Naam, string Telefoon, string Email, string Rol = "");

@@ -19,7 +19,7 @@ public static class KindMapper
         IReadOnlyList<OudercontactDto> oudercontacten =
             gebruiker.Heeft(Capabilities.MagOudergegevensZien)
                 ? kind.Oudercontacten
-                    .Select(o => new OudercontactDto(o.Naam, o.Telefoon, o.Email))
+                    .Select(o => new OudercontactDto(o.Naam, o.Telefoon, o.Email, o.Rol))
                     .ToList()
                 : [];
 
@@ -55,7 +55,7 @@ public static class KindMapper
         // velden eruit gefilterd zodat een leeg formulier geen leeg contact opslaat).
         kind.Oudercontacten = invoer.Oudercontacten
             .Where(o => !string.IsNullOrWhiteSpace(o.Naam) || !string.IsNullOrWhiteSpace(o.Telefoon) || !string.IsNullOrWhiteSpace(o.Email))
-            .Select(o => new Oudercontact(o.Naam, o.Telefoon, o.Email))
+            .Select(o => new Oudercontact(o.Naam, o.Telefoon, o.Email, o.Rol ?? ""))
             .ToList();
     }
 }

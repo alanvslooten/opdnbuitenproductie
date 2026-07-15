@@ -203,7 +203,10 @@ function KindDetail({
           {kind.oudercontacten.length > 0 ? (
             kind.oudercontacten.map((oc, i) => (
               <div key={i} className="g2" style={{ marginBottom: 10 }}>
-                <Veld label={i === 0 ? 'Naam (primair)' : 'Naam'} waarde={oc.naam} />
+                <Veld
+                  label={i === 0 ? 'Naam (primair)' : 'Naam'}
+                  waarde={oc.rol ? `${oc.naam} (${oc.rol})` : oc.naam}
+                />
                 <Veld label="Telefoon" waarde={oc.telefoon} />
                 <Veld label="E-mail" waarde={oc.email} />
               </div>

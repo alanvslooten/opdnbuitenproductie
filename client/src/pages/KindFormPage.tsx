@@ -18,7 +18,7 @@ const LEEG: KindInvoer = {
   oudercontacten: [],
 };
 
-const LEEG_CONTACT: OudercontactDto = { naam: '', telefoon: '', email: '' };
+const LEEG_CONTACT: OudercontactDto = { naam: '', telefoon: '', email: '', rol: '' };
 
 export function KindFormPage() {
   const { id } = useParams();
@@ -180,9 +180,16 @@ export function KindFormPage() {
                 key={i}
                 style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 10 }}
               >
-                <div className="frow" style={{ gridTemplateColumns: '1fr 1fr 1fr', flex: 1 }}>
+                <div className="frow" style={{ gridTemplateColumns: '1fr 0.7fr 1fr 1fr', flex: 1 }}>
                   <Veld label={i === 0 ? 'Naam (primair)' : 'Naam'}>
                     <input value={c.naam} onChange={(e) => zetContact(i, 'naam', e.target.value)} />
+                  </Veld>
+                  <Veld label="Rol">
+                    <input
+                      value={c.rol ?? ''}
+                      placeholder="mama, tante…"
+                      onChange={(e) => zetContact(i, 'rol', e.target.value)}
+                    />
                   </Veld>
                   <Veld label="Telefoon">
                     <input value={c.telefoon} onChange={(e) => zetContact(i, 'telefoon', e.target.value)} />

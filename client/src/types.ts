@@ -31,6 +31,7 @@ export interface OudercontactDto {
   naam: string;
   telefoon: string;
   email: string;
+  rol?: string;
 }
 
 export interface StamgroepDto {
