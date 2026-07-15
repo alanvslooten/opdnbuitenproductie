@@ -64,15 +64,15 @@
   --surface:   #1E293B;
   --surface2:  #0F172A;
   --sb-bg:     #1E293B;
-  --sb-text:   #94A3B8;
+  --sb-text:   #AEBACB;
   --sb-text-on:#F1F5F9;
   --sb-active: rgba(37,99,235,.15);
-  --border:    rgba(148,163,184,.12);
-  --border2:   rgba(148,163,184,.22);
+  --border:    rgba(148,163,184,.18);
+  --border2:   rgba(148,163,184,.30);
   --text:      #F1F5F9;
-  /* Lichtere secundaire/muted tinten voor leesbaar contrast op donker (Erik-feedback). */
-  --text2:     #CBD5E1;
-  --text3:     #94A3B8;
+  /* Lichtere secundaire/muted tinten voor leesbaar contrast op donker (Erik-feedback + v3). */
+  --text2:     #D4DEEA;
+  --text3:     #AEBACB;
   --shadow:    0 1px 3px rgba(0,0,0,.2);
   --shadow-md: 0 4px 16px rgba(0,0,0,.3);
   --shadow-lg: 0 12px 40px rgba(0,0,0,.45);

@@ -368,6 +368,12 @@ export interface ContactDetailDto {
   rondleidingen: RondleidingDto[];
   inschrijvingen: ContactInschrijvingDto[];
   geplaatsteKinderen: ContactKindDto[];
+  logboek: ContactLogregelDto[];
+}
+
+export interface ContactLogregelDto {
+  tijdstip: string;
+  omschrijving: string;
 }
 
 export interface ContactInvoer {

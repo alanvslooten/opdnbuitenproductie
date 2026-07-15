@@ -148,7 +148,20 @@ public sealed class WachtlijstController : ControllerBase
             return groepFout;
         }
 
+        Weekdag oudeDagen = inschrijving.GewensteOpvangdagen;
         WachtlijstMapper.PasInvoerToe(inschrijving, invoer);
+
+        // Wijzigingslogboek: leg een dag-wijziging vast op het gekoppelde contact
+        // (zo is later te zien dat een kind bijv. "vier keer van dag gewisseld" is).
+        if (inschrijving.ContactId is { } contactId && inschrijving.GewensteOpvangdagen != oudeDagen)
+        {
+            _db.ContactLogregels.Add(new ContactLogregel
+            {
+                ContactId = contactId,
+                Omschrijving = $"Gewenste dagen gewijzigd van {WeekdagenTekst(oudeDagen)} naar {WeekdagenTekst(inschrijving.GewensteOpvangdagen)} ({inschrijving.Voornaam}).",
+            });
+        }
+
         await _db.SaveChangesAsync(ct);
 
         return Ok(WachtlijstMapper.NaarDto(inschrijving, _huidigeGebruiker, Vandaag, await WeergaveContextAsync(ct)));
@@ -350,6 +363,19 @@ public sealed class WachtlijstController : ControllerBase
         };
 
         _db.Voorstellen.Add(voorstel);
+
+        // Wijzigingslogboek op het gekoppelde contact: leg vast dat er een voorstel uitging.
+        if (inschrijving.ContactId is { } contactId)
+        {
+            string groepNaam = await _db.Stamgroepen.AsNoTracking()
+                .Where(s => s.Id == invoer.StamgroepId).Select(s => s.Naam).FirstOrDefaultAsync(ct) ?? "een groep";
+            _db.ContactLogregels.Add(new ContactLogregel
+            {
+                ContactId = contactId,
+                Omschrijving = $"Voorstel verstuurd voor {groepNaam} ({WeekdagenTekst(invoer.Dagen)}) — {inschrijving.Voornaam}.",
+            });
+        }
+
         await _db.SaveChangesAsync(ct);
 
         return CreatedAtAction(nameof(Voorstelhistorie), new { id = inschrijving.Id },
@@ -452,6 +478,18 @@ public sealed class WachtlijstController : ControllerBase
                 Title = "Onbekende stamgroep",
                 Detail = "De gewenste stamgroep bestaat niet binnen deze organisatie.",
             });
+    }
+
+    /// <summary>Leesbare korte tekst voor een set weekdag-vlaggen ("Ma, Wo") — voor het logboek.</summary>
+    private static string WeekdagenTekst(Weekdag dagen)
+    {
+        (Weekdag Vlag, string Kort)[] alle =
+        {
+            (Weekdag.Maandag, "Ma"), (Weekdag.Dinsdag, "Di"), (Weekdag.Woensdag, "Wo"),
+            (Weekdag.Donderdag, "Do"), (Weekdag.Vrijdag, "Vr"),
+        };
+        var namen = alle.Where(d => dagen.HasFlag(d.Vlag)).Select(d => d.Kort).ToList();
+        return namen.Count == 0 ? "geen dagen" : string.Join(", ", namen);
     }
 
     /// <summary>Of de opgegeven dagdata precies de voorgestelde dagen dekt (elk één datum).</summary>

@@ -58,6 +58,12 @@ public sealed class ContactenController : ControllerBase
             return NotFound();
         }
 
+        var logboek = await _db.ContactLogregels.AsNoTracking()
+            .Where(l => l.ContactId == id)
+            .OrderByDescending(l => l.AangemaaktOp)
+            .Select(l => new ContactLogregelDto(l.AangemaaktOp, l.Omschrijving))
+            .ToListAsync(ct);
+
         var detail = new ContactDetailDto(
             c.Id, c.Voornaam, c.Achternaam, c.Telefoon, c.Email, c.IsIntern, c.Aantekeningen,
             c.Rondleidingen
@@ -72,7 +78,8 @@ public sealed class ContactenController : ControllerBase
             c.Kinderen
                 .OrderBy(k => k.Achternaam)
                 .Select(k => new ContactKindDto(k.Id, Naam(k.Voornaam, k.Achternaam), k.Stamgroep!.Naam))
-                .ToList());
+                .ToList(),
+            logboek);
 
         return Ok(detail);
     }

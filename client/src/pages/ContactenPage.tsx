@@ -285,6 +285,15 @@ function ContactDetailModal({ id, onSluit }: { id: string; onSluit: () => void }
                   </button>
                 </form>
               </Sectie>
+
+              <Sectie titel="Wijzigingslogboek" icon="ti-history">
+                {c.logboek.length === 0 ? <Leeg /> : c.logboek.map((l, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 8, padding: '4px 0', borderBottom: '1px solid var(--border)', fontSize: 12 }}>
+                    <span style={{ color: 'var(--text3)', whiteSpace: 'nowrap' }}>{datumNl(l.tijdstip.slice(0, 10))}</span>
+                    <span>{l.omschrijving}</span>
+                  </div>
+                ))}
+              </Sectie>
             </>
           )}
         </div>

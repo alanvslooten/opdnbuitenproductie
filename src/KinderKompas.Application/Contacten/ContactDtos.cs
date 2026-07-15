@@ -28,7 +28,10 @@ public sealed record ContactInschrijvingDto(
 /// <summary>Een geplaatst kind dat bij het contact hoort.</summary>
 public sealed record ContactKindDto(Guid Id, string Naam, string StamgroepNaam);
 
-/// <summary>Volledig contactdossier met historie: rondleidingen, inschrijvingen, geplaatste kinderen.</summary>
+/// <summary>Eén regel uit het wijzigingslogboek van een contact.</summary>
+public sealed record ContactLogregelDto(DateTime Tijdstip, string Omschrijving);
+
+/// <summary>Volledig contactdossier met historie: rondleidingen, inschrijvingen, geplaatste kinderen, logboek.</summary>
 public sealed record ContactDetailDto(
     Guid Id,
     string Voornaam,
@@ -39,7 +42,8 @@ public sealed record ContactDetailDto(
     string? Aantekeningen,
     IReadOnlyList<RondleidingDto> Rondleidingen,
     IReadOnlyList<ContactInschrijvingDto> Inschrijvingen,
-    IReadOnlyList<ContactKindDto> GeplaatsteKinderen);
+    IReadOnlyList<ContactKindDto> GeplaatsteKinderen,
+    IReadOnlyList<ContactLogregelDto> Logboek);
 
 /// <summary>Invoer voor het aanmaken/bewerken van een contact.</summary>
 public sealed record ContactInvoer(
