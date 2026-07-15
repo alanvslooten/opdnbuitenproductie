@@ -21,6 +21,7 @@ const links: Link[] = [
   { naar: '/bkr', label: 'BKR Calculator', cap: Capabilities.DashboardZien, icon: 'ti-calculator', sectie: 'Overzicht' },
   { naar: '/contacten', label: 'Contacten', cap: Capabilities.WachtlijstBeheren, icon: 'ti-address-book', sectie: 'Contacten' },
   { naar: '/wachtlijst', label: 'Wachtlijst', cap: Capabilities.WachtlijstBeheren, icon: 'ti-list-numbers', sectie: 'Contacten' },
+  { naar: '/plaatsingsoverzicht', label: 'Waar is er plek?', cap: Capabilities.WachtlijstBeheren, icon: 'ti-map-search', sectie: 'Contacten' },
   { naar: '/rooster', label: 'Rooster', cap: Capabilities.RoosterBeheren, icon: 'ti-clock', sectie: 'Personeel' },
   { naar: '/verlof', label: 'Verlof & Ziekte', cap: Capabilities.RoosterBeheren, icon: 'ti-beach', sectie: 'Personeel' },
   { naar: '/medewerkers', label: 'Medewerkers', cap: Capabilities.MedewerkersBeheren, icon: 'ti-users', sectie: 'Personeel' },

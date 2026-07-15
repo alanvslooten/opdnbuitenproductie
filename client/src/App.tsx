@@ -7,6 +7,7 @@ import { MeldingenPage } from './pages/MeldingenPage';
 import { InstellingenPage } from './pages/InstellingenPage';
 import { WeekplanningPage } from './pages/WeekplanningPage';
 import { MaandplanningPage } from './pages/MaandplanningPage';
+import { PlaatsingsoverzichtPage } from './pages/PlaatsingsoverzichtPage';
 import { DagfilterPage } from './pages/DagfilterPage';
 import { KinderenPage } from './pages/KinderenPage';
 import { KindFormPage } from './pages/KindFormPage';
@@ -75,6 +76,7 @@ export default function App() {
         <Route path="/medewerkers" element={<MedewerkersPage />} />
         <Route path="/verlof" element={<VerlofPage />} />
         <Route path="/contacten" element={<ContactenPage />} />
+        <Route path="/plaatsingsoverzicht" element={<PlaatsingsoverzichtPage />} />
         <Route path="/wachtlijst" element={<WachtlijstPage />} />
         <Route path="/wachtlijst/nieuw" element={<WachtlijstFormPage />} />
         <Route path="/wachtlijst/:id" element={<WachtlijstFormPage />} />
