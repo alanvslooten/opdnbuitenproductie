@@ -105,7 +105,8 @@ public static class RoosterBouwer
             return new RoosterCelDto(
                 dag.Datum, dag.Dag, kleur,
                 dienst?.Id, dienst?.Taakomschrijving, dienst?.UrencorrectieKwartieren ?? 0,
-                dienst?.Dienstsoort ?? Dienstsoort.Regulier);
+                dienst?.Dienstsoort ?? Dienstsoort.Regulier,
+                dienst?.EffectieveBegintijd, dienst?.EffectieveEindtijd, dienst?.GeplandeUren);
         }).ToList();
 
         return new RoosterMedewerkerRijDto(m.Id, $"{m.Voornaam} {m.Achternaam}", cellen);

@@ -1,5 +1,6 @@
 using KinderKompas.Domain.Common;
 using KinderKompas.Domain.Enums;
+using KinderKompas.Domain.Services;
 
 namespace KinderKompas.Domain.Entiteiten;
 
@@ -28,6 +29,31 @@ public class Roosterdienst : TenantEntiteit
 
     /// <summary>Soort dienst: regulier, vroege (openen) of late (sluiten) dienst.</summary>
     public Dienstsoort Dienstsoort { get; set; } = Dienstsoort.Regulier;
+
+    /// <summary>
+    /// Begintijd van de dienst. Null = de standaardtijd van de <see cref="Dienstsoort"/>
+    /// (zie <see cref="EffectieveBegintijd"/>); een expliciete waarde overschrijft die.
+    /// </summary>
+    public TimeOnly? Begintijd { get; set; }
+
+    /// <summary>Eindtijd van de dienst. Null = de standaardtijd van de <see cref="Dienstsoort"/>.</summary>
+    public TimeOnly? Eindtijd { get; set; }
+
+    /// <summary>De effectieve begintijd: de expliciete waarde of anders de soort-standaard.</summary>
+    public TimeOnly EffectieveBegintijd => Begintijd ?? Diensttijden.Standaard(Dienstsoort).Begin;
+
+    /// <summary>De effectieve eindtijd: de expliciete waarde of anders de soort-standaard.</summary>
+    public TimeOnly EffectieveEindtijd => Eindtijd ?? Diensttijden.Standaard(Dienstsoort).Eind;
+
+    /// <summary>De (onbetaalde) pauze van deze dienst op basis van de duur.</summary>
+    public TimeSpan Pauze => Diensttijden.Pauze(EffectieveBegintijd, EffectieveEindtijd);
+
+    /// <summary>
+    /// De netto geplande uren: de dienstduur minus de onbetaalde pauze, plus de
+    /// handmatige urencorrectie. Dit is de "gepland"-kant van meer-/minderwerk.
+    /// </summary>
+    public decimal GeplandeUren =>
+        Diensttijden.NettoUren(EffectieveBegintijd, EffectieveEindtijd) + UrencorrectieUren;
 
     /// <summary>
     /// Urenregistratie als plus/min ten opzichte van de standaard dienstduur,

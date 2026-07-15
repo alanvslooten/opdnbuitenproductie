@@ -552,6 +552,9 @@ export interface RoosterCelDto {
   taakomschrijving: string | null;
   urencorrectieKwartieren: number;
   dienstsoort: number;
+  begintijd: string | null;
+  eindtijd: string | null;
+  geplandeUren: number | null;
 }
 
 export interface RoosterMedewerkerRijDto {
@@ -597,6 +600,8 @@ export interface DienstInvoer {
   taakomschrijving: string | null;
   urencorrectieKwartieren: number;
   dienstsoort: number;
+  begintijd: string | null;
+  eindtijd: string | null;
 }
 
 // === Fase 8 — portalen (groepsportaal & thuis-portaal) ===

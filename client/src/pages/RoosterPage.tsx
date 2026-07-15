@@ -18,6 +18,9 @@ interface EditState {
   taak: string;
   kwartier: number;
   dienstsoort: number;
+  begin: string;
+  eind: string;
+  geplandeUren: number | null;
 }
 
 export function RoosterPage() {
@@ -30,7 +33,16 @@ export function RoosterPage() {
 
   function celKlik(groepId: string, medewerkerId: string, naam: string, cel: RoosterCelDto) {
     if (cel.dienstId) {
-      setEdit({ dienstId: cel.dienstId, naam, taak: cel.taakomschrijving ?? '', kwartier: cel.urencorrectieKwartieren, dienstsoort: cel.dienstsoort });
+      setEdit({
+        dienstId: cel.dienstId,
+        naam,
+        taak: cel.taakomschrijving ?? '',
+        kwartier: cel.urencorrectieKwartieren,
+        dienstsoort: cel.dienstsoort,
+        begin: (cel.begintijd ?? '').slice(0, 5),
+        eind: (cel.eindtijd ?? '').slice(0, 5),
+        geplandeUren: cel.geplandeUren,
+      });
     } else if (cel.kleur === RoosterCelKleur.Leeg) {
       void dienstToevoegen.mutateAsync({ medewerkerId, stamgroepId: groepId, datum: cel.datum });
     }
@@ -38,7 +50,16 @@ export function RoosterPage() {
 
   async function bewaarEdit() {
     if (!edit) return;
-    await dienstBijwerken.mutateAsync({ id: edit.dienstId, invoer: { taakomschrijving: edit.taak || null, urencorrectieKwartieren: edit.kwartier, dienstsoort: edit.dienstsoort } });
+    await dienstBijwerken.mutateAsync({
+      id: edit.dienstId,
+      invoer: {
+        taakomschrijving: edit.taak || null,
+        urencorrectieKwartieren: edit.kwartier,
+        dienstsoort: edit.dienstsoort,
+        begintijd: edit.begin || null,
+        eindtijd: edit.eind || null,
+      },
+    });
     setEdit(null);
   }
 
@@ -143,6 +164,11 @@ export function RoosterPage() {
                       {cel.dienstId ? (
                         <>
                           <div>{cel.taakomschrijving || 'dienst'}</div>
+                          {cel.begintijd && cel.eindtijd && (
+                            <div style={{ fontSize: 9, color: 'var(--text3)' }}>
+                              {cel.begintijd.slice(0, 5)}–{cel.eindtijd.slice(0, 5)}
+                            </div>
+                          )}
                           {cel.dienstsoort !== Dienstsoort.Regulier && (
                             <div style={{ fontSize: 9, fontWeight: 700, color: cel.dienstsoort === Dienstsoort.Vroege ? 'var(--teal)' : 'var(--indigo)' }}>
                               {DIENSTSOORT_KORT[cel.dienstsoort]}
@@ -207,6 +233,22 @@ export function RoosterPage() {
                   ))}
                 </select>
               </div>
+              <div className="frow" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                <div className="fld">
+                  <label>Begintijd</label>
+                  <input type="time" value={edit.begin} onChange={(e) => setEdit({ ...edit, begin: e.target.value })} />
+                </div>
+                <div className="fld">
+                  <label>Eindtijd</label>
+                  <input type="time" value={edit.eind} onChange={(e) => setEdit({ ...edit, eind: e.target.value })} />
+                </div>
+              </div>
+              {edit.geplandeUren != null && (
+                <p style={{ fontSize: 10, color: 'var(--text3)', marginTop: -4, marginBottom: 10 }}>
+                  Geplande uren (na pauze): {edit.geplandeUren.toLocaleString('nl-NL')} u. Standaardtijden volgen de
+                  dienstsoort; hier handmatig aanpasbaar.
+                </p>
+              )}
               <div className="fld">
                 <label>Taakomschrijving</label>
                 <input value={edit.taak} onChange={(e) => setEdit({ ...edit, taak: e.target.value })} />

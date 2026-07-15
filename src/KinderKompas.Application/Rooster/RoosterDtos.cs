@@ -73,10 +73,21 @@ public sealed record RoosterCelDto(
     Guid? DienstId,
     string? Taakomschrijving,
     int UrencorrectieKwartieren,
-    Dienstsoort Dienstsoort);
+    Dienstsoort Dienstsoort,
+    TimeOnly? Begintijd,
+    TimeOnly? Eindtijd,
+    decimal? GeplandeUren);
 
-/// <summary>Invoer voor het bijwerken van een dienst (taak, urencorrectie in kwartieren, dienstsoort).</summary>
-public sealed record DienstInvoer(string? Taakomschrijving, int UrencorrectieKwartieren, Dienstsoort Dienstsoort = Dienstsoort.Regulier);
+/// <summary>
+/// Invoer voor het bijwerken van een dienst (taak, urencorrectie in kwartieren, dienstsoort,
+/// en optioneel afwijkende begin-/eindtijd; null = de standaardtijd van de dienstsoort).
+/// </summary>
+public sealed record DienstInvoer(
+    string? Taakomschrijving,
+    int UrencorrectieKwartieren,
+    Dienstsoort Dienstsoort = Dienstsoort.Regulier,
+    TimeOnly? Begintijd = null,
+    TimeOnly? Eindtijd = null);
 
 /// <summary>Invoer voor het handmatig toevoegen van een dienst aan de roosterweek.</summary>
 public sealed record DienstToevoegenInvoer(Guid MedewerkerId, Guid StamgroepId, DateOnly Datum);
