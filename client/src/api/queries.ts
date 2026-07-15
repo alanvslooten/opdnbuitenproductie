@@ -19,6 +19,9 @@ import type {
   DienstInvoer,
   InstellingenDto,
   InstellingenInvoer,
+  KennisbankItemDto,
+  KennisbankDocumentDto,
+  KennisbankInvoer,
   LocatieDto,
   MeldingDto,
   MeldingTellingenDto,
@@ -819,4 +822,41 @@ export function useSchoolvakantieMutaties() {
     onSuccess: invalideer,
   });
   return { aanmaken, verwijderen };
+}
+
+// --- Kennisbank ---
+export function useKennisbank() {
+  return useQuery({
+    queryKey: ['kennisbank'],
+    queryFn: () => api<KennisbankItemDto[]>('/api/kennisbank'),
+  });
+}
+
+export function useKennisbankDocument(id: string | undefined) {
+  return useQuery({
+    enabled: !!id,
+    queryKey: ['kennisbank', id],
+    queryFn: () => api<KennisbankDocumentDto>(`/api/kennisbank/${id}`),
+  });
+}
+
+export function useKennisbankMutaties() {
+  const qc = useQueryClient();
+  const invalideer = () => qc.invalidateQueries({ queryKey: ['kennisbank'] });
+  return {
+    toevoegen: useMutation({
+      mutationFn: (invoer: KennisbankInvoer) =>
+        api<KennisbankDocumentDto>('/api/kennisbank', { method: 'POST', body: JSON.stringify(invoer) }),
+      onSuccess: invalideer,
+    }),
+    bijwerken: useMutation({
+      mutationFn: ({ id, invoer }: { id: string; invoer: KennisbankInvoer }) =>
+        api<KennisbankDocumentDto>(`/api/kennisbank/${id}`, { method: 'PUT', body: JSON.stringify(invoer) }),
+      onSuccess: invalideer,
+    }),
+    verwijderen: useMutation({
+      mutationFn: (id: string) => api<void>(`/api/kennisbank/${id}`, { method: 'DELETE' }),
+      onSuccess: invalideer,
+    }),
+  };
 }

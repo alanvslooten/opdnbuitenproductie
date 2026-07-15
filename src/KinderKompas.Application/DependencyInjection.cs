@@ -1,5 +1,6 @@
 using FluentValidation;
 using KinderKompas.Application.Instellingen;
+using KinderKompas.Application.Kennisbank;
 using KinderKompas.Application.Kinderen;
 using KinderKompas.Application.Medewerkers;
 using KinderKompas.Application.Portaal;
@@ -32,6 +33,7 @@ public static class DependencyInjection
         services.AddScoped<IValidator<BeschikbaarheidInvoer>, BeschikbaarheidInvoerValidator>();
         services.AddScoped<IValidator<InstellingenInvoer>, InstellingenInvoerValidator>();
         services.AddScoped<IValidator<LocatieInvoer>, LocatieInvoerValidator>();
+        services.AddScoped<IValidator<KennisbankInvoer>, KennisbankInvoerValidator>();
         return services;
     }
 }

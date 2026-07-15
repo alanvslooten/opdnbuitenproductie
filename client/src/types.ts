@@ -837,3 +837,25 @@ export interface SchoolvakantieInvoer {
   begindatum: Iso;
   einddatum: Iso;
 }
+
+// === Kennisbank (interne naslag voor medewerkers) ===
+export interface KennisbankItemDto {
+  id: string;
+  titel: string;
+  categorie: string | null;
+  gewijzigdOp: Iso;
+}
+
+export interface KennisbankDocumentDto {
+  id: string;
+  titel: string;
+  categorie: string | null;
+  inhoud: string;
+  gewijzigdOp: Iso;
+}
+
+export interface KennisbankInvoer {
+  titel: string;
+  categorie: string | null;
+  inhoud: string;
+}

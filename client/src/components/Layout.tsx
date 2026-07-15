@@ -28,6 +28,7 @@ const links: Link[] = [
   { naar: '/instellingen', label: 'Instellingen', cap: Capabilities.InstellingenBeheren, icon: 'ti-settings', sectie: 'Beheer' },
   { naar: '/groepsportaal', label: 'Groepsportaal', cap: Capabilities.GroepsportaalGebruiken, icon: 'ti-device-tablet', sectie: 'Portalen' },
   { naar: '/thuisportaal', label: 'Mijn portaal', cap: Capabilities.ThuisportaalGebruiken, icon: 'ti-home', sectie: 'Portalen' },
+  { naar: '/kennisbank', label: 'Kennisbank', cap: Capabilities.ThuisportaalGebruiken, icon: 'ti-book', sectie: 'Portalen' },
 ];
 
 const SECTIE_VOLGORDE = ['Overzicht', 'Kinderen', 'Contacten', 'Personeel', 'Beheer', 'Portalen'];

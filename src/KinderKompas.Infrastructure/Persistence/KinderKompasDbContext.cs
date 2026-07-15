@@ -51,6 +51,7 @@ public class KinderKompasDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Dagplaatsing> Dagplaatsingen => Set<Dagplaatsing>();
     public DbSet<Melding> Meldingen => Set<Melding>();
     public DbSet<OrganisatieInstellingen> OrganisatieInstellingen => Set<OrganisatieInstellingen>();
+    public DbSet<KennisbankDocument> KennisbankDocumenten => Set<KennisbankDocument>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -327,6 +328,14 @@ public class KinderKompasDbContext : IdentityDbContext<ApplicationUser>
             b.HasIndex(m => new { m.OrganisatieId, m.DeduplicatieSleutel, m.Status });
         });
 
+        modelBuilder.Entity<KennisbankDocument>(b =>
+        {
+            b.Property(d => d.Titel).HasMaxLength(200).IsRequired();
+            b.Property(d => d.Categorie).HasMaxLength(100);
+            b.Property(d => d.Inhoud).HasMaxLength(20000).IsRequired();
+            b.HasIndex(d => new { d.OrganisatieId, d.Categorie });
+        });
+
         modelBuilder.Entity<OrganisatieInstellingen>(b =>
         {
             b.Property(i => i.VerborgenMeldingsoorten).HasMaxLength(100).IsRequired();
@@ -360,6 +369,7 @@ public class KinderKompasDbContext : IdentityDbContext<ApplicationUser>
         modelBuilder.Entity<Dagplaatsing>().HasQueryFilter(e => e.OrganisatieId == _tenantProvider.CurrentOrganisatieId);
         modelBuilder.Entity<Melding>().HasQueryFilter(e => e.OrganisatieId == _tenantProvider.CurrentOrganisatieId);
         modelBuilder.Entity<OrganisatieInstellingen>().HasQueryFilter(e => e.OrganisatieId == _tenantProvider.CurrentOrganisatieId);
+        modelBuilder.Entity<KennisbankDocument>().HasQueryFilter(e => e.OrganisatieId == _tenantProvider.CurrentOrganisatieId);
 
         SeedData(modelBuilder);
     }
