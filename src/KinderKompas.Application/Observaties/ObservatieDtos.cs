@@ -70,7 +70,8 @@ public static class ObservatieOverzichtBouwer
         IReadOnlySet<int> afgerondeMijlpalen = perMijlpaal.Keys.ToHashSet();
 
         IReadOnlyList<ObservatiemomentStatus> statussen =
-            Observatieschema.Bereken(kind.Geboortedatum, peildatum, afgerondeMijlpalen, binnenkortDrempelDagen);
+            Observatieschema.Bereken(
+                kind.Geboortedatum, peildatum, afgerondeMijlpalen, binnenkortDrempelDagen, kind.Startdatum);
 
         List<ObservatiemomentDto> momenten = statussen.Select(s =>
         {

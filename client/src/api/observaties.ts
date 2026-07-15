@@ -10,6 +10,8 @@ export const ObservatieStatus = {
   Binnenkort: 1,
   Overschreden: 2,
   Afgerond: 3,
+  /** Viel vóór de opvang-startdatum van het kind; niet de verantwoordelijkheid van de opvang. */
+  VoorStartdatum: 4,
 } as const;
 
 export interface ObservatieDto {

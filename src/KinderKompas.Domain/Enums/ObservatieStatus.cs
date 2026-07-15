@@ -18,4 +18,12 @@ public enum ObservatieStatus
 
     /// <summary>Het moment is afgevinkt (er is een afgeronde observatie).</summary>
     Afgerond = 3,
+
+    /// <summary>
+    /// De vervaldatum viel vóór de opvang-startdatum van het kind: het moment lag
+    /// vóór de opvang de verantwoordelijkheid kreeg. Telt NIET als overschreden
+    /// (een kind dat op 7 maanden start hoort geen "overschreden" 6-maandenmoment
+    /// te krijgen).
+    /// </summary>
+    VoorStartdatum = 4,
 }

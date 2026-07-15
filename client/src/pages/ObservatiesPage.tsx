@@ -16,6 +16,7 @@ const STATUS_STIJL: Record<number, { label: string; klasse: string }> = {
   [ObservatieStatus.Binnenkort]: { label: 'Binnenkort', klasse: 'chip-need' },
   [ObservatieStatus.Overschreden]: { label: 'Overschreden', klasse: 'chip-over' },
   [ObservatieStatus.Afgerond]: { label: 'Afgerond', klasse: 'chip-done' },
+  [ObservatieStatus.VoorStartdatum]: { label: 'Voor startdatum', klasse: 'b-gray' },
 };
 
 const BANNER = 'https://images.unsplash.com/photo-1630476504743-a4d342f88760?q=80&w=1200&auto=format&fit=crop';

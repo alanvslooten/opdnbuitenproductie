@@ -67,12 +67,19 @@ public static class Observatieschema
     /// <param name="binnenkortDrempelDagen">
     /// Hoeveel dagen vooruit een naderend moment als "binnenkort" telt (default 30).
     /// </param>
+    /// <param name="startdatum">
+    /// De opvang-startdatum van het kind (optioneel). Momenten met een vervaldatum
+    /// vóór deze datum krijgen de status <see cref="ObservatieStatus.VoorStartdatum"/>
+    /// i.p.v. <see cref="ObservatieStatus.Overschreden"/>: ze lagen vóór de opvang de
+    /// verantwoordelijkheid kreeg. <c>null</c> = geen ondergrens (oud gedrag).
+    /// </param>
     /// <returns>De momenten met status, oplopend op leeftijd.</returns>
     public static IReadOnlyList<ObservatiemomentStatus> Bereken(
         DateOnly geboortedatum,
         DateOnly peildatum,
         IReadOnlySet<int> afgerondeMijlpalen,
-        int binnenkortDrempelDagen = StandaardBinnenkortDrempelDagen)
+        int binnenkortDrempelDagen = StandaardBinnenkortDrempelDagen,
+        DateOnly? startdatum = null)
     {
         ArgumentNullException.ThrowIfNull(afgerondeMijlpalen);
         if (binnenkortDrempelDagen < 0)
@@ -88,7 +95,7 @@ public static class Observatieschema
             DateOnly vervaldatum = VervaldatumVan(geboortedatum, moment.MijlpaalMaanden);
             bool afgerond = afgerondeMijlpalen.Contains(moment.MijlpaalMaanden);
             ObservatieStatus status =
-                BepaalStatus(vervaldatum, peildatum, afgerond, binnenkortDrempelDagen);
+                BepaalStatus(vervaldatum, peildatum, afgerond, binnenkortDrempelDagen, startdatum);
             resultaat.Add(new ObservatiemomentStatus(moment, vervaldatum, status));
         }
 
@@ -96,11 +103,21 @@ public static class Observatieschema
     }
 
     private static ObservatieStatus BepaalStatus(
-        DateOnly vervaldatum, DateOnly peildatum, bool afgerond, int drempelDagen)
+        DateOnly vervaldatum, DateOnly peildatum, bool afgerond, int drempelDagen,
+        DateOnly? startdatum)
     {
+        // Afvinken wint altijd: een reeds afgeronde observatie blijft afgerond,
+        // ook als het moment vóór de startdatum viel.
         if (afgerond)
         {
             return ObservatieStatus.Afgerond;
+        }
+
+        // Momenten vóór de opvang-startdatum vallen buiten de verantwoordelijkheid
+        // van de opvang en tellen niet als overschreden.
+        if (startdatum is { } start && vervaldatum < start)
+        {
+            return ObservatieStatus.VoorStartdatum;
         }
 
         if (vervaldatum < peildatum)

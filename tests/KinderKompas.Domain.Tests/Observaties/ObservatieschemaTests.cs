@@ -183,4 +183,67 @@ public class ObservatieschemaTests
         Assert.Throws<ArgumentNullException>(() =>
             Observatieschema.Bereken(new DateOnly(2024, 1, 1), new DateOnly(2024, 6, 1), null!));
     }
+
+    [Fact]
+    public void KindDatLaterStart_KrijgtGeenOverschredenMomentVoorDeStartdatum()
+    {
+        // Kind is geboren 2024-01-01, maar start pas op 7 maanden (2024-08-01) bij de
+        // opvang. Het 6-maandenmoment (2024-07-01) viel vóór de startdatum.
+        DateOnly geboortedatum = new(2024, 1, 1);
+        DateOnly startdatum = new(2024, 8, 1);
+        DateOnly peildatum = new(2024, 10, 1); // ruim ná het 6-maandenmoment
+
+        ObservatiemomentStatus zesMaanden = Observatieschema
+            .Bereken(geboortedatum, peildatum, GeenAfgerond, startdatum: startdatum)
+            .Single(s => s.Moment.MijlpaalMaanden == 6);
+
+        // Zonder de startdatum zou dit "Overschreden" zijn (zie de test hierboven);
+        // mét startdatum hoort het niet bij de opvang.
+        Assert.Equal(ObservatieStatus.VoorStartdatum, zesMaanden.Status);
+    }
+
+    [Fact]
+    public void MomentOpOfNaDeStartdatum_VolgtDeGewoneStatuslogica()
+    {
+        DateOnly geboortedatum = new(2024, 1, 1);
+        DateOnly startdatum = new(2024, 8, 1);
+        // 12-maandenmoment (2025-01-01) ligt ná de startdatum; peildatum erna → overschreden.
+        DateOnly peildatum = new(2025, 3, 1);
+
+        ObservatiemomentStatus twaalfMaanden = Observatieschema
+            .Bereken(geboortedatum, peildatum, GeenAfgerond, startdatum: startdatum)
+            .Single(s => s.Moment.MijlpaalMaanden == 12);
+
+        Assert.Equal(ObservatieStatus.Overschreden, twaalfMaanden.Status);
+    }
+
+    [Fact]
+    public void AfgevinktMomentVoorStartdatum_BlijftAfgerond()
+    {
+        // Afvinken wint: als een moment vóór de startdatum tóch is afgerond, blijft dat zo.
+        DateOnly geboortedatum = new(2024, 1, 1);
+        DateOnly startdatum = new(2024, 8, 1);
+        DateOnly peildatum = new(2024, 10, 1);
+        var afgerond = new HashSet<int> { 6 };
+
+        ObservatiemomentStatus zesMaanden = Observatieschema
+            .Bereken(geboortedatum, peildatum, afgerond, startdatum: startdatum)
+            .Single(s => s.Moment.MijlpaalMaanden == 6);
+
+        Assert.Equal(ObservatieStatus.Afgerond, zesMaanden.Status);
+    }
+
+    [Fact]
+    public void ZonderStartdatum_BlijftHetOudeGedrag_Overschreden()
+    {
+        // Terugvalgedrag: geen startdatum meegegeven → moment in het verleden is overschreden.
+        DateOnly geboortedatum = new(2024, 1, 1);
+        DateOnly peildatum = new(2024, 10, 1);
+
+        ObservatiemomentStatus zesMaanden = Observatieschema
+            .Bereken(geboortedatum, peildatum, GeenAfgerond, startdatum: null)
+            .Single(s => s.Moment.MijlpaalMaanden == 6);
+
+        Assert.Equal(ObservatieStatus.Overschreden, zesMaanden.Status);
+    }
 }
