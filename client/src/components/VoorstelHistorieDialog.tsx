@@ -88,8 +88,13 @@ function VoorstelKaart({
   return (
     <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', padding: 12, fontSize: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
           <span className={`badge ${kleur}`}>{VOORSTEL_STATUS_LABEL[voorstel.status]}</span>
+          {voorstel.voorgesteldeStamgroepNaam && (
+            <span className="badge b-violet">
+              <i className="ti ti-users" /> {voorstel.voorgesteldeStamgroepNaam}
+            </span>
+          )}
           {voorstel.isDeelvoorstel && <span className="badge b-gold">deelvoorstel</span>}
         </div>
         <span style={{ fontSize: 10, color: 'var(--text3)' }}>verstuurd {korteDatum(voorstel.verstuurdOp.slice(0, 10))}</span>

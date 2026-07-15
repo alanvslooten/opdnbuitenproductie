@@ -67,6 +67,7 @@ public sealed record VoorstelDto(
     Guid InschrijvingId,
     DateTime VerstuurdOp,
     Guid VoorgesteldeStamgroepId,
+    string? VoorgesteldeStamgroepNaam,
     Weekdag VoorgesteldeDagen,
     bool IsDeelvoorstel,
     VoorstelStatus Status,

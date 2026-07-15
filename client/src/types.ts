@@ -305,6 +305,7 @@ export interface VoorstelDto {
   inschrijvingId: string;
   verstuurdOp: string;
   voorgesteldeStamgroepId: string;
+  voorgesteldeStamgroepNaam: string | null;
   voorgesteldeDagen: number;
   isDeelvoorstel: boolean;
   status: number;

@@ -273,9 +273,13 @@ public sealed class WachtlijstController : ControllerBase
             return NotFound();
         }
 
+        Dictionary<Guid, string> groepNamen = await _db.Stamgroepen.AsNoTracking()
+            .ToDictionaryAsync(s => s.Id, s => s.Naam, ct);
+
         IReadOnlyList<VoorstelDto> historie = inschrijving.Voorstellen
             .OrderByDescending(v => v.VerstuurdOp)
-            .Select(v => VoorstelMapper.NaarDto(v, inschrijving.GewensteOpvangdagen))
+            .Select(v => VoorstelMapper.NaarDto(
+                v, inschrijving.GewensteOpvangdagen, groepNamen.GetValueOrDefault(v.VoorgesteldeStamgroepId)))
             .ToList();
 
         return Ok(historie);

@@ -9,7 +9,8 @@ public static class VoorstelMapper
     /// De openstaande gewenste dagen op het moment van beoordelen; bepaalt of dit
     /// voorstel een deelvoorstel is (dekt het niet álle openstaande dagen).
     /// </param>
-    public static VoorstelDto NaarDto(Voorstel voorstel, Domain.Enums.Weekdag openstaandeDagenBijVersturen)
+    public static VoorstelDto NaarDto(
+        Voorstel voorstel, Domain.Enums.Weekdag openstaandeDagenBijVersturen, string? stamgroepNaam = null)
     {
         var dagen = voorstel.Dagen
             .OrderBy(d => d.VoorgesteldeDatum)
@@ -21,6 +22,7 @@ public static class VoorstelMapper
             voorstel.WachtlijstInschrijvingId,
             voorstel.VerstuurdOp,
             voorstel.VoorgesteldeStamgroepId,
+            stamgroepNaam,
             voorstel.VoorgesteldeDagen,
             voorstel.IsDeelvoorstelVan(openstaandeDagenBijVersturen),
             voorstel.Status,
