@@ -1,13 +1,38 @@
 import { useState } from 'react';
-import { useWeekplanning } from '../api/queries';
+import { useDagplaatsingen, useStamgroepen, useWeekplanning } from '../api/queries';
 import { BkrBadge } from '../components/BkrBadge';
+import { DagplaatsingDialog } from '../components/DagplaatsingDialog';
+import type { DagplaatsingDto } from '../types';
 import { korteDatum, vandaagIso, verschuifDagen, weekBeginIso } from '../datum';
 
 const BANNER = 'https://images.unsplash.com/photo-1567405258710-35a7015252c0?q=80&w=1200&auto=format&fit=crop';
 
+interface Gekozen {
+  kindId: string;
+  naam: string;
+  datum: string;
+  groepId: string;
+}
+
 export function WeekplanningPage() {
   const [datum, setDatum] = useState(vandaagIso());
   const { data, isLoading, error } = useWeekplanning(datum);
+  const { data: stamgroepen } = useStamgroepen();
+
+  const weekBegin = data?.weekBegin ?? weekBeginIso(datum);
+  const { data: afwijkingen } = useDagplaatsingen(weekBegin, verschuifDagen(weekBegin, 4));
+  const [gekozen, setGekozen] = useState<Gekozen | null>(null);
+
+  // Snelle opzoeking van een afwijking per (kind, datum) — datum als kale yyyy-MM-dd.
+  const afwijkingBij = new Map<string, DagplaatsingDto>();
+  for (const a of afwijkingen ?? []) {
+    afwijkingBij.set(`${a.kindId}|${a.datum.slice(0, 10)}`, a);
+  }
+  const sleutel = (kindId: string, dagDatum: string) => `${kindId}|${dagDatum.slice(0, 10)}`;
+
+  const gekozenAfwijking = gekozen
+    ? afwijkingBij.get(sleutel(gekozen.kindId, gekozen.datum))
+    : undefined;
 
   // Dag-koppen afleiden uit de eerste groep (alle groepen hebben dezelfde 5 dagen).
   const dagKoppen = data?.stamgroepen[0]?.dagen ?? [];
@@ -90,9 +115,37 @@ export function WeekplanningPage() {
                       )}
                       {d.kinderen.length > 0 && (
                         <ul style={{ marginTop: 4, listStyle: 'none', fontSize: 10, color: 'var(--text3)' }}>
-                          {d.kinderen.map((k) => (
-                            <li key={k.id}>{k.voornaam}</li>
-                          ))}
+                          {d.kinderen.map((k) => {
+                            const heeftAfwijking = afwijkingBij.has(sleutel(k.id, d.datum));
+                            return (
+                              <li key={k.id}>
+                                <button
+                                  type="button"
+                                  className="lnk"
+                                  title="Dagplaatsing wijzigen (ruildag, andere groep, afwezig)"
+                                  onClick={() =>
+                                    setGekozen({
+                                      kindId: k.id,
+                                      naam: k.voornaam,
+                                      datum: d.datum,
+                                      groepId: g.stamgroepId,
+                                    })
+                                  }
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    padding: 0,
+                                    font: 'inherit',
+                                    color: heeftAfwijking ? 'var(--violet)' : 'var(--text3)',
+                                    fontWeight: heeftAfwijking ? 600 : 400,
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  {heeftAfwijking && <i className="ti ti-calendar-cog" style={{ fontSize: 9 }} />} {k.voornaam}
+                                </button>
+                              </li>
+                            );
+                          })}
                         </ul>
                       )}
                     </td>
@@ -113,7 +166,21 @@ export function WeekplanningPage() {
 
       <p style={{ marginTop: 12, fontSize: 10, color: 'var(--text3)' }}>
         BKR-badge per dag: aantal kinderen · vereiste begeleiders. Rood = boven het wettelijk groepsmaximum.
+        Klik een kind om een dagplaatsing te wijzigen (ruildag, andere groep, afwezig);
+        <i className="ti ti-calendar-cog" style={{ color: 'var(--violet)' }} /> markeert een afwijking.
       </p>
+
+      {gekozen && stamgroepen && (
+        <DagplaatsingDialog
+          kindId={gekozen.kindId}
+          kindNaam={gekozen.naam}
+          datum={gekozen.datum}
+          huidigeGroepId={gekozen.groepId}
+          bestaand={gekozenAfwijking}
+          stamgroepen={stamgroepen}
+          onSluit={() => setGekozen(null)}
+        />
+      )}
     </div>
   );
 }

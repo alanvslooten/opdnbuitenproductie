@@ -9,6 +9,8 @@ import type {
   RondleidingDto,
   RondleidingInvoer,
   DagFilterDto,
+  DagplaatsingDto,
+  DagplaatsingInvoer,
   MaandPlanningDto,
   BkrBerekenInvoer,
   BkrBerekenResultaatDto,
@@ -149,6 +151,36 @@ export function useDagplanning(datum: string, stamgroepId?: string) {
     queryKey: ['dagplanning', datum, stamgroepId ?? 'alle'],
     queryFn: () => api<DagFilterDto>(`/api/planning/dag?${params.toString()}`),
   });
+}
+
+// --- Dagplaatsingen (dagafwijkingen: ruildag, incidenteel, extra dag, afwezig) ---
+export function useDagplaatsingen(van: string, tot: string) {
+  return useQuery({
+    queryKey: ['dagplaatsingen', van, tot],
+    queryFn: () => api<DagplaatsingDto[]>(`/api/dagplaatsingen?van=${van}&tot=${tot}`),
+  });
+}
+
+export function useDagplaatsingMutaties() {
+  const qc = useQueryClient();
+  // Een dagafwijking verschuift de planning en BKR per dag: alle afgeleide views verversen.
+  const invalideer = () => {
+    qc.invalidateQueries({ queryKey: ['dagplaatsingen'] });
+    qc.invalidateQueries({ queryKey: ['weekplanning'] });
+    qc.invalidateQueries({ queryKey: ['maandplanning'] });
+    qc.invalidateQueries({ queryKey: ['dagplanning'] });
+  };
+  return {
+    zet: useMutation({
+      mutationFn: (invoer: DagplaatsingInvoer) =>
+        api<DagplaatsingDto>('/api/dagplaatsingen', { method: 'POST', body: JSON.stringify(invoer) }),
+      onSuccess: invalideer,
+    }),
+    verwijder: useMutation({
+      mutationFn: (id: string) => api<void>(`/api/dagplaatsingen/${id}`, { method: 'DELETE' }),
+      onSuccess: invalideer,
+    }),
+  };
 }
 
 // --- Schoolvakanties ---

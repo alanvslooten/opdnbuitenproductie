@@ -158,6 +158,42 @@ export interface MaandPlanningDto {
   weken: WeekplanningDto[];
 }
 
+/** Soort dagafwijking (dagplaatsing). Numeriek over de lijn. */
+export const DagplaatsingSoort = {
+  Ruildag: 0,
+  ExtraDag: 1,
+  Incidenteel: 2,
+  Afwezig: 3,
+} as const;
+
+export const DAGPLAATSING_SOORT_LABEL: Record<number, string> = {
+  [DagplaatsingSoort.Ruildag]: 'Ruildag',
+  [DagplaatsingSoort.ExtraDag]: 'Extra dag',
+  [DagplaatsingSoort.Incidenteel]: 'Incidenteel andere groep',
+  [DagplaatsingSoort.Afwezig]: 'Afwezig',
+};
+
+export interface DagplaatsingDto {
+  id: string;
+  kindId: string;
+  kindVoornaam: string;
+  kindAchternaam: string;
+  datum: Iso;
+  stamgroepId: string | null;
+  stamgroepNaam: string | null;
+  soort: number;
+  notitie: string | null;
+  isAanwezig: boolean;
+}
+
+export interface DagplaatsingInvoer {
+  kindId: string;
+  datum: Iso;
+  stamgroepId: string | null;
+  soort: number;
+  notitie: string | null;
+}
+
 export interface AuthResponse {
   vereistTweeFactor: boolean;
   accessToken: string | null;
