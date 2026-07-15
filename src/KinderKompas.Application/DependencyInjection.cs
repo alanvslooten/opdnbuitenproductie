@@ -34,6 +34,8 @@ public static class DependencyInjection
         services.AddScoped<IValidator<InstellingenInvoer>, InstellingenInvoerValidator>();
         services.AddScoped<IValidator<LocatieInvoer>, LocatieInvoerValidator>();
         services.AddScoped<IValidator<KennisbankInvoer>, KennisbankInvoerValidator>();
+        services.AddScoped<IValidator<Publiek.PubliekeAanmeldingInvoer>, Publiek.PubliekeAanmeldingInvoerValidator>();
+        services.AddScoped<IValidator<Publiek.PubliekeRondleidingInvoer>, Publiek.PubliekeRondleidingInvoerValidator>();
         return services;
     }
 }

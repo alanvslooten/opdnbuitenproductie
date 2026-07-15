@@ -1,5 +1,7 @@
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 using KinderKompas.Api.Auth;
 using KinderKompas.Api.Serialisatie;
 using KinderKompas.Application;
@@ -56,6 +58,19 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 // Application: use-case-validators (FluentValidation).
 builder.Services.AddApplication();
+
+// Rate limiting voor de PUBLIEKE (anonieme) formulieren: hard begrenzen per IP zodat
+// het aanmeld-/rondleidingformulier niet als spam-kanaal kan worden misbruikt.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddFixedWindowLimiter("publiek", o =>
+    {
+        o.Window = TimeSpan.FromMinutes(1);
+        o.PermitLimit = 5;
+        o.QueueLimit = 0;
+    });
+});
 
 // HTTP-/claim-gebonden providers (tenant + huidige gebruiker).
 builder.Services.AddHttpContextAccessor();
@@ -146,6 +161,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors();
 
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 

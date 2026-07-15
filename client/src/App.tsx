@@ -23,6 +23,8 @@ import { BkrCalculatorPage } from './pages/BkrCalculatorPage';
 import { GroepsportaalPage } from './pages/GroepsportaalPage';
 import { ThuisportaalPage } from './pages/ThuisportaalPage';
 import { KennisbankPage } from './pages/KennisbankPage';
+import { PubliekAanmeldPage } from './pages/PubliekAanmeldPage';
+import { PubliekRondleidingPage } from './pages/PubliekRondleidingPage';
 import { Capabilities } from './types';
 
 export default function App() {
@@ -40,6 +42,9 @@ export default function App() {
     return (
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        {/* Publieke formulieren: zonder login bereikbaar. */}
+        <Route path="/aanmelden" element={<PubliekAanmeldPage />} />
+        <Route path="/rondleiding" element={<PubliekRondleidingPage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );
@@ -60,6 +65,10 @@ export default function App() {
 
   return (
     <Routes>
+      {/* Publieke formulieren blijven ook voor een ingelogde beheerder bereikbaar
+          (om te delen/previewen), standalone buiten de app-chrome. */}
+      <Route path="/aanmelden" element={<PubliekAanmeldPage />} />
+      <Route path="/rondleiding" element={<PubliekRondleidingPage />} />
       <Route element={<Layout />}>
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/meldingen" element={<MeldingenPage />} />
