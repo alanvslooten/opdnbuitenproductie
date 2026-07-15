@@ -17,8 +17,11 @@ function rendabiliteit(dagenBits: number): { dagen: number; euro: string } {
 
 export function WachtlijstPage() {
   const [toonGeplaatst, setToonGeplaatst] = useState(false);
+  const [alleenVoorstel, setAlleenVoorstel] = useState(false);
   const { data, isLoading, error } = useWachtlijst(toonGeplaatst);
   const { bovenaan, verwijderen } = useWachtlijstMutaties();
+
+  const rijen = (data ?? []).filter((w) => !alleenVoorstel || w.heeftOpenVoorstel);
 
   const [voorstelVoor, setVoorstelVoor] = useState<WachtlijstInschrijvingDto | null>(null);
   const [historieVoor, setHistorieVoor] = useState<WachtlijstInschrijvingDto | null>(null);
@@ -34,6 +37,10 @@ export function WachtlijstPage() {
           <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--text2)' }}>
             <input type="checkbox" checked={toonGeplaatst} onChange={(e) => setToonGeplaatst(e.target.checked)} />
             Toon geplaatste
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--text2)' }}>
+            <input type="checkbox" checked={alleenVoorstel} onChange={(e) => setAlleenVoorstel(e.target.checked)} />
+            Alleen met voorstel
           </label>
           <Link to="/wachtlijst/nieuw" className="btn btn-primary btn-sm">
             <i className="ti ti-plus" /> Inschrijving
@@ -65,7 +72,7 @@ export function WachtlijstPage() {
               </tr>
             </thead>
             <tbody>
-              {data.map((w, i) => (
+              {rijen.map((w, i) => (
                 <tr key={w.id} style={{ verticalAlign: 'top' }}>
                   <td style={{ color: 'var(--text3)' }}>{i + 1}</td>
                   <td>
@@ -110,7 +117,15 @@ export function WachtlijstPage() {
                       {w.prioriteitsscore}
                     </span>
                   </td>
-                  <td style={{ color: 'var(--text2)' }}>{WACHTLIJST_STATUS_LABEL[w.status]}</td>
+                  <td style={{ color: 'var(--text2)' }}>
+                    {w.heeftOpenVoorstel ? (
+                      <span className="badge b-gold" title="Er staat een verstuurd voorstel open">
+                        <i className="ti ti-send" /> voorstel verstuurd
+                      </span>
+                    ) : (
+                      WACHTLIJST_STATUS_LABEL[w.status]
+                    )}
+                  </td>
                   <td>
                     <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 5 }}>
                       <button onClick={() => setVoorstelVoor(w)} disabled={w.openstaandeDagen === 0} className="btn btn-green btn-xs">
@@ -143,10 +158,14 @@ export function WachtlijstPage() {
                   </td>
                 </tr>
               ))}
-              {data.length === 0 && (
+              {rijen.length === 0 && (
                 <tr>
                   <td colSpan={9} style={{ textAlign: 'center', color: 'var(--text3)', padding: '24px 0' }}>
-                    {toonGeplaatst ? 'Geen inschrijvingen.' : 'Geen wachtende inschrijvingen.'}
+                    {alleenVoorstel
+                      ? 'Geen inschrijvingen met een openstaand voorstel.'
+                      : toonGeplaatst
+                        ? 'Geen inschrijvingen.'
+                        : 'Geen wachtende inschrijvingen.'}
                   </td>
                 </tr>
               )}

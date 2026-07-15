@@ -229,6 +229,7 @@ export interface WachtlijstInschrijvingDto {
   isIntern: boolean;
   handmatigBovenaan: boolean;
   status: number;
+  heeftOpenVoorstel: boolean;
   notitie: string | null;
   prioriteitsscore: number;
   prioriteitOnderdelen: string[];

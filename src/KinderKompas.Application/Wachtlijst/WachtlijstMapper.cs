@@ -49,6 +49,11 @@ public static class WachtlijstMapper
         bool wordtBinnenkortVier =
             peildatum < vierde && vierde <= peildatum.AddDays(opties.BinnenkortVierDrempelDagen);
 
+        // "Voorstel verstuurd": er staat een verstuurd, nog niet beantwoord voorstel open.
+        // (Voorstellen moeten daarvoor wel geladen zijn; anders levert dit false.)
+        bool heeftOpenVoorstel =
+            inschrijving.Voorstellen.Any(v => v.Status == Domain.Enums.VoorstelStatus.Verstuurd);
+
         return new WachtlijstInschrijvingDto(
             inschrijving.Id,
             inschrijving.Voornaam,
@@ -64,6 +69,7 @@ public static class WachtlijstMapper
             inschrijving.IsIntern,
             inschrijving.HandmatigBovenaan,
             inschrijving.Status,
+            heeftOpenVoorstel,
             inschrijving.Notitie,
             prioriteit.Score,
             prioriteit.Onderdelen,

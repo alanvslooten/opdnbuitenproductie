@@ -73,7 +73,8 @@ public sealed class WachtlijstController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<WachtlijstInschrijvingDto>>> Lijst(
         [FromQuery] bool toonGeplaatst, CancellationToken ct)
     {
-        var query = _db.Wachtlijstinschrijvingen.AsNoTracking();
+        IQueryable<WachtlijstInschrijving> query =
+            _db.Wachtlijstinschrijvingen.AsNoTracking().Include(w => w.Voorstellen);
         if (!toonGeplaatst)
         {
             query = query.Where(w => w.Status == WachtlijstStatus.Wachtend);

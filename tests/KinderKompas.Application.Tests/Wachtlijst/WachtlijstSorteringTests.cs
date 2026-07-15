@@ -24,6 +24,7 @@ public class WachtlijstSorteringTests
             IsIntern: false,
             HandmatigBovenaan: bovenaan,
             Status: WachtlijstStatus.Wachtend,
+            HeeftOpenVoorstel: false,
             Notitie: null,
             Prioriteitsscore: score,
             PrioriteitOnderdelen: Array.Empty<string>(),

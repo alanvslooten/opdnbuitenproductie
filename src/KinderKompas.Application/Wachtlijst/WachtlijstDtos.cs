@@ -25,6 +25,8 @@ public sealed record WachtlijstInschrijvingDto(
     bool IsIntern,
     bool HandmatigBovenaan,
     WachtlijstStatus Status,
+    // True als er een verstuurd, nog niet beantwoord voorstel openstaat: "voorstel verstuurd".
+    bool HeeftOpenVoorstel,
     string? Notitie,
     int Prioriteitsscore,
     IReadOnlyList<string> PrioriteitOnderdelen,
