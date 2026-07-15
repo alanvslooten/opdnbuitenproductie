@@ -22,7 +22,8 @@ public sealed record MedewerkerDto(
     bool ContractVast = false,
     DateOnly? Contractbegindatum = null,
     DateOnly? Contracteinddatum = null,
-    int? ResterendeContractmaanden = null);
+    int? ResterendeContractmaanden = null,
+    bool TeltMeeVoorBkr = true);
 
 /// <summary>Invoermodel voor het aanmaken/bewerken van een medewerker.</summary>
 public sealed record MedewerkerInvoer(
@@ -39,7 +40,8 @@ public sealed record MedewerkerInvoer(
     string? NoodcontactTelefoon = null,
     bool ContractVast = false,
     DateOnly? Contractbegindatum = null,
-    DateOnly? Contracteinddatum = null);
+    DateOnly? Contracteinddatum = null,
+    bool TeltMeeVoorBkr = true);
 
 /// <summary>
 /// Validatie voor medewerker-invoer. De roosterlagen mogen elkaar niet overlappen:
@@ -93,7 +95,7 @@ public static class MedewerkerMapper
             m.Contracturen, m.VasteStamgroepId, m.VasteStamgroep?.Naam,
             m.Telefoon, m.Email, m.NoodcontactNaam, m.NoodcontactTelefoon,
             m.ContractVast, m.Contractbegindatum, m.Contracteinddatum,
-            m.ResterendeContractmaanden(vandaag));
+            m.ResterendeContractmaanden(vandaag), m.TeltMeeVoorBkr);
     }
 
     /// <summary>Zet de invoer op een (nieuw of bestaand) medewerker-record.</summary>
@@ -113,6 +115,7 @@ public static class MedewerkerMapper
         m.ContractVast = invoer.ContractVast;
         m.Contractbegindatum = invoer.Contractbegindatum;
         m.Contracteinddatum = invoer.ContractVast ? null : invoer.Contracteinddatum;
+        m.TeltMeeVoorBkr = invoer.TeltMeeVoorBkr;
     }
 
     private static string? Leeg(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();

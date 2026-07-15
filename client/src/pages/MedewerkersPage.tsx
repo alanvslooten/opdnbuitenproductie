@@ -18,6 +18,7 @@ const LEEG = {
   noodcontactTelefoon: '',
   contractVast: true,
   contracteinddatum: '' as string,
+  teltMeeVoorBkr: true,
 };
 
 function dagenTekst(vlaggen: number): string {
@@ -51,6 +52,7 @@ export function MedewerkersPage() {
       noodcontactTelefoon: m.noodcontactTelefoon ?? '',
       contractVast: m.contractVast,
       contracteinddatum: m.contracteinddatum ?? '',
+      teltMeeVoorBkr: m.teltMeeVoorBkr,
     });
     setFout(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -83,6 +85,7 @@ export function MedewerkersPage() {
       noodcontactTelefoon: form.noodcontactTelefoon || null,
       contractVast: form.contractVast,
       contracteinddatum: form.contractVast ? null : form.contracteinddatum || null,
+      teltMeeVoorBkr: form.teltMeeVoorBkr,
     };
     try {
       if (bewerktId) await bewerken.mutateAsync({ id: bewerktId, invoer });
@@ -146,6 +149,18 @@ export function MedewerkersPage() {
                   </option>
                 ))}
               </select>
+            </div>
+            <div className="fld" style={{ marginBottom: 0 }}>
+              <label>Telt mee voor BKR</label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 400, paddingTop: 6 }}>
+                <input
+                  type="checkbox"
+                  checked={form.teltMeeVoorBkr}
+                  onChange={(e) => setForm((f) => ({ ...f, teltMeeVoorBkr: e.target.checked }))}
+                  style={{ width: 'auto' }}
+                />
+                Meegeteld als begeleider (stagiair meestal uit)
+              </label>
             </div>
             <div className="fld" style={{ marginBottom: 0 }}>
               <label>Thuisgroep</label>

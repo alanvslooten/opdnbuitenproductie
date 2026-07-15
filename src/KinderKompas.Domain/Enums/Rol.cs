@@ -11,5 +11,12 @@ public enum Rol
     Hulpbeheerder = 1,
     Senior = 2,
     Junior = 3,
-    Groepsportaal = 4
+    Groepsportaal = 4,
+
+    /// <summary>
+    /// Stagiair: werkt mee op de groep, maar telt standaard NIET mee voor de BKR
+    /// (zie <see cref="Entiteiten.Medewerker.TeltMeeVoorBkr"/> — een BBL-laatstejaars
+    /// kan wel meetellen). Minimale rechten; de beheerder kan die uitbreiden.
+    /// </summary>
+    Stagiair = 5
 }

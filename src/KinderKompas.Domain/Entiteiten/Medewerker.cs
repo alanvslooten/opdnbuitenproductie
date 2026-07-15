@@ -17,6 +17,13 @@ public class Medewerker : TenantEntiteit
     public Rol Rol { get; set; }
 
     /// <summary>
+    /// Of deze medewerker meetelt voor de beroepskracht-kindratio (BKR). Standaard true
+    /// voor gediplomeerde krachten; voor een <see cref="Rol.Stagiair"/> meestal false,
+    /// maar een BBL-laatstejaars kan wél meetellen — daarom een aparte, instelbare vlag.
+    /// </summary>
+    public bool TeltMeeVoorBkr { get; set; } = true;
+
+    /// <summary>
     /// Vaste werkdagen: de eerste roosterlaag. Deze dagen staan automatisch in
     /// elke week ingepland, tenzij er goedgekeurd verlof of ziekte tegenover staat.
     /// </summary>

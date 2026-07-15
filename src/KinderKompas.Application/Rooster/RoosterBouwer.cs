@@ -56,7 +56,10 @@ public static class RoosterBouwer
 
             var indicatoren = groep.Dagen.Select(dag =>
             {
-                int ingepland = dienstenInGroep.Count(d => d.Datum == dag.Datum);
+                // Alleen medewerkers die meetellen voor de BKR tellen als "ingeplande
+                // begeleider" (een stagiair met TeltMeeVoorBkr=false telt niet mee).
+                int ingepland = dienstenInGroep.Count(d => d.Datum == dag.Datum
+                    && (!medewerkerPerId.TryGetValue(d.MedewerkerId, out Medewerker? mw) || mw.TeltMeeVoorBkr));
                 int? nodig = dag.Bkr.VereisteHoeveelheidPmers;
                 return new RoosterDagIndicatorDto(
                     dag.Datum, dag.Dag, dag.Bkr.AantalKinderen, nodig, ingepland,

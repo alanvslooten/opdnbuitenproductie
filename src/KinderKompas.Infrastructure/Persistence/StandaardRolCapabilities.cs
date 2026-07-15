@@ -57,6 +57,12 @@ public static class StandaardRolCapabilities
             Capabilities.MagObservatiesVersturen,
             Capabilities.MagThuisportaalGebruiken,
         },
+        // Stagiair: minimale rechten — alleen het eigen thuis-portaal (rooster/uren/
+        // beschikbaarheid). Geen observaties/planning tenzij de beheerder dat toekent.
+        [Rol.Stagiair] = new[]
+        {
+            Capabilities.MagThuisportaalGebruiken,
+        },
         // Gedeeld tablet-account op locatie: geen MedewerkerId, dus geen thuis-portaal.
         // Tablet op locatie: kinderen ALLEEN-LEZEN (geen MagKinderenBeheren → geen
         // aanmaken/bewerken/verwijderen en geen stamgroepen-beheer, feedback Erik V2).

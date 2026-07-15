@@ -99,6 +99,8 @@ public class KinderKompasDbContext : IdentityDbContext<ApplicationUser>
             b.Property(m => m.Voornaam).HasMaxLength(100).IsRequired();
             b.Property(m => m.Achternaam).HasMaxLength(100).IsRequired();
             b.Property(m => m.Contracturen).HasPrecision(5, 2);
+            // Gediplomeerde krachten tellen standaard mee voor de BKR (stagiair niet).
+            b.Property(m => m.TeltMeeVoorBkr).HasDefaultValue(true);
             b.Property(m => m.IdentityUserId).HasMaxLength(450);
             b.Property(m => m.Telefoon).HasMaxLength(30);
             b.Property(m => m.Email).HasMaxLength(200);

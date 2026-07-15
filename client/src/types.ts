@@ -387,7 +387,7 @@ export interface RondleidingInvoer {
 // === Fase 5 — werkrooster, medewerkers, verlof ===
 
 /** Rol numeriek (zoals de enum over de lijn komt). */
-export const ROL_LABEL = ['Beheerder', 'Hulpbeheerder', 'Senior', 'Junior', 'Groepsportaal'];
+export const ROL_LABEL = ['Beheerder', 'Hulpbeheerder', 'Senior', 'Junior', 'Groepsportaal', 'Stagiair'];
 
 /**
  * Leesbaar rol-label voor de zijbalk, gesleuteld op de rol-NAAM zoals die in de
@@ -400,6 +400,7 @@ export const ROL_WEERGAVE: Record<string, string> = {
   Senior: 'Senior Medewerker',
   Junior: 'Junior Medewerker',
   Groepsportaal: 'Groepsportaal',
+  Stagiair: 'Stagiair',
 };
 
 /** Verlofcategorie: 0=Vakantieuren, 1=Verlofbudget. */
@@ -448,6 +449,7 @@ export interface MedewerkerDto {
   contractbegindatum: Iso | null;
   contracteinddatum: Iso | null;
   resterendeContractmaanden: number | null;
+  teltMeeVoorBkr: boolean;
 }
 
 export interface MedewerkerInvoer {
