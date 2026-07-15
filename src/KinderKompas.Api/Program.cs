@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json.Serialization;
 using KinderKompas.Api.Auth;
+using KinderKompas.Api.Serialisatie;
 using KinderKompas.Application;
 using KinderKompas.Application.Abstractions;
 using KinderKompas.Infrastructure;
@@ -27,6 +28,11 @@ builder.Services
         // Null-velden weglaten: een niet-toegekend Oudercontact (thuis-portaal)
         // wordt zo niet eens meegestuurd in de JSON.
         options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+
+        // Alle DateTimes als UTC met 'Z' serialiseren, zodat de browser ze naar
+        // lokale tijd omrekent i.p.v. de UTC-waarde als lokale tijd te tonen
+        // (de "kloktijd springt terug"-bug). Zie UtcDateTimeJsonConverter.
+        options.JsonSerializerOptions.Converters.Add(new UtcDateTimeJsonConverter());
     });
 builder.Services.AddOpenApi();
 

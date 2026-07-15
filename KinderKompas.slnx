@@ -6,6 +6,7 @@
     <Project Path="src/KinderKompas.Infrastructure/KinderKompas.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/KinderKompas.Api.Tests/KinderKompas.Api.Tests.csproj" />
     <Project Path="tests/KinderKompas.Application.Tests/KinderKompas.Application.Tests.csproj" />
     <Project Path="tests/KinderKompas.Domain.Tests/KinderKompas.Domain.Tests.csproj" />
     <Project Path="tests/KinderKompas.Infrastructure.Tests/KinderKompas.Infrastructure.Tests.csproj" />
