@@ -77,4 +77,84 @@ public class WeekplanningBouwerTests
         Assert.Null(maandag.Bkr.VereisteHoeveelheidPmers);
         Assert.NotNull(maandag.Bkr.Melding);
     }
+
+    private static Kind KindMetId(Guid id, DateOnly geboortedatum, Guid stamgroepId)
+    {
+        Kind k = Kind(geboortedatum, stamgroepId);
+        k.Id = id;
+        return k;
+    }
+
+    private static DagPlanningDto DagVan(WeekplanningDto week, Guid groepId, DateOnly datum) =>
+        week.Stamgroepen.Single(g => g.StamgroepId == groepId).Dagen.Single(d => d.Datum == datum);
+
+    [Fact]
+    public void Bouw_MetIncidenteleDagafwijking_VerplaatstKindTussenGroepen()
+    {
+        Guid groepA = Guid.NewGuid();
+        Guid groepB = Guid.NewGuid();
+        var a = new Stamgroep { Id = groepA, Naam = "Bengeltjes", MaxKinderen = 12 };
+        var b = new Stamgroep { Id = groepB, Naam = "Boefjes", MaxKinderen = 12 };
+        DateOnly peuter = new(2024, 1, 1);
+
+        Guid flexKindId = Guid.NewGuid();
+        a.Kinderen = new List<Kind> { KindMetId(Guid.NewGuid(), peuter, groepA), KindMetId(flexKindId, peuter, groepA) };
+        b.Kinderen = new List<Kind> { KindMetId(Guid.NewGuid(), peuter, groepB) };
+
+        DateOnly woensdag = new(2026, 3, 4);
+        // Flex-kind staat op woensdag incidenteel op groep B i.p.v. zijn thuisgroep A.
+        var afwijking = new Dagplaatsing
+        {
+            KindId = flexKindId, Datum = woensdag, StamgroepId = groepB, Soort = DagplaatsingSoort.Incidenteel,
+        };
+
+        WeekplanningDto week = WeekplanningBouwer.Bouw(
+            woensdag, new[] { a, b }, Array.Empty<Schoolvakantie>(),
+            diensten: null, dagplaatsingen: new[] { afwijking });
+
+        // Woensdag: A verliest het flex-kind (2 → 1), B krijgt het erbij (1 → 2).
+        Assert.Equal(1, DagVan(week, groepA, woensdag).Bkr.AantalKinderen);
+        Assert.Equal(2, DagVan(week, groepB, woensdag).Bkr.AantalKinderen);
+
+        // Donderdag (geen afwijking): het kind staat gewoon weer op zijn thuisgroep A.
+        DateOnly donderdag = new(2026, 3, 5);
+        Assert.Equal(2, DagVan(week, groepA, donderdag).Bkr.AantalKinderen);
+        Assert.Equal(1, DagVan(week, groepB, donderdag).Bkr.AantalKinderen);
+    }
+
+    [Fact]
+    public void Bouw_MetAfwezigheidsafwijking_HaaltKindUitDeTellingEnBkr()
+    {
+        Guid groepId = Guid.NewGuid();
+        var stamgroep = new Stamgroep { Id = groepId, Naam = "Bengeltjes", MaxKinderen = 12 };
+        DateOnly baby = new(2025, 11, 1);
+        Guid afwezigKindId = Guid.NewGuid();
+        // Vier baby's (BKR: ceil(4/3) = 2 pm'ers). Eén is woensdag afwezig → 3 baby's = 1 pm'er.
+        stamgroep.Kinderen = new List<Kind>
+        {
+            KindMetId(Guid.NewGuid(), baby, groepId),
+            KindMetId(Guid.NewGuid(), baby, groepId),
+            KindMetId(Guid.NewGuid(), baby, groepId),
+            KindMetId(afwezigKindId, baby, groepId),
+        };
+
+        DateOnly woensdag = new(2026, 3, 4);
+        var afwezig = new Dagplaatsing
+        {
+            KindId = afwezigKindId, Datum = woensdag, StamgroepId = null, Soort = DagplaatsingSoort.Afwezig,
+        };
+
+        WeekplanningDto week = WeekplanningBouwer.Bouw(
+            woensdag, new[] { stamgroep }, Array.Empty<Schoolvakantie>(),
+            diensten: null, dagplaatsingen: new[] { afwezig });
+
+        DagPlanningDto wo = DagVan(week, groepId, woensdag);
+        Assert.Equal(3, wo.Bkr.AantalKinderen);
+        Assert.Equal(1, wo.Bkr.VereisteHoeveelheidPmers);
+
+        // Dinsdag (geen afwijking): alle vier aanwezig, 2 pm'ers.
+        DagPlanningDto di = DagVan(week, groepId, new DateOnly(2026, 3, 3));
+        Assert.Equal(4, di.Bkr.AantalKinderen);
+        Assert.Equal(2, di.Bkr.VereisteHoeveelheidPmers);
+    }
 }

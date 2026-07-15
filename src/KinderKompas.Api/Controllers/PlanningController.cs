@@ -46,8 +46,9 @@ public sealed class PlanningController : ControllerBase
 
         var vakanties = await _db.Schoolvakanties.AsNoTracking().ToListAsync(ct);
         List<Roosterdienst> diensten = await VerstuurdeDienstenAsync(weekBegin, weekBegin.AddDays(4), ct);
+        List<Dagplaatsing> dagplaatsingen = await DagplaatsingenAsync(weekBegin, weekBegin.AddDays(4), ct);
 
-        WeekplanningDto week = WeekplanningBouwer.Bouw(peil, stamgroepen, vakanties, diensten);
+        WeekplanningDto week = WeekplanningBouwer.Bouw(peil, stamgroepen, vakanties, diensten, dagplaatsingen);
         return Ok(week);
     }
 
@@ -71,11 +72,12 @@ public sealed class PlanningController : ControllerBase
             .ToListAsync(ct);
         var vakanties = await _db.Schoolvakanties.AsNoTracking().ToListAsync(ct);
         List<Roosterdienst> diensten = await VerstuurdeDienstenAsync(start, eindWeekBegin.AddDays(4), ct);
+        List<Dagplaatsing> dagplaatsingen = await DagplaatsingenAsync(start, eindWeekBegin.AddDays(4), ct);
 
         var weken = new List<WeekplanningDto>();
         for (DateOnly w = start; w <= eindWeekBegin; w = w.AddDays(7))
         {
-            weken.Add(WeekplanningBouwer.Bouw(w, stamgroepen, vakanties, diensten));
+            weken.Add(WeekplanningBouwer.Bouw(w, stamgroepen, vakanties, diensten, dagplaatsingen));
         }
 
         return Ok(new MaandPlanningDto(peil.Year, peil.Month, weken));
@@ -88,17 +90,20 @@ public sealed class PlanningController : ControllerBase
     {
         DateOnly peil = datum ?? Vandaag;
 
-        var query = _db.Kinderen.AsNoTracking();
-        if (stamgroepId is { } gid)
-        {
-            query = query.Where(k => k.StamgroepId == gid);
-        }
-
-        List<Kind> kinderen = await query.ToListAsync(ct);
+        // We laden ALLE kinderen (niet vooraf op thuisgroep gefilterd): een dagafwijking
+        // kan een kind op een andere dan zijn thuisgroep zetten. De effectieve indeling
+        // bepaalt vervolgens wie waar staat.
+        List<Kind> kinderen = await _db.Kinderen.AsNoTracking().ToListAsync(ct);
         var vakanties = await _db.Schoolvakanties.AsNoTracking().ToListAsync(ct);
+        List<Dagplaatsing> dagplaatsingen = await DagplaatsingenAsync(peil, peil, ct);
 
-        IReadOnlyList<AanwezigKindDto> aanwezig = Aanwezigheid
-            .AanwezigOp(kinderen, peil, vakanties)
+        // Met een groepfilter: wie staat er die dag effectief op die groep. Zonder filter:
+        // wie is er die dag überhaupt (op welke groep dan ook).
+        IReadOnlyList<Kind> effectiefAanwezig = stamgroepId is { } gid
+            ? Dagindeling.OpGroepOpDag(kinderen, gid, peil, dagplaatsingen, vakanties)
+            : Dagindeling.AanwezigOp(kinderen, peil, dagplaatsingen, vakanties);
+
+        IReadOnlyList<AanwezigKindDto> aanwezig = effectiefAanwezig
             .Select(k => new AanwezigKindDto(
                 k.Id, k.Voornaam, k.Achternaam, k.StamgroepId,
                 k.LeeftijdscategorieOp(peil).Groep, k.Contracttype))
@@ -126,5 +131,11 @@ public sealed class PlanningController : ControllerBase
         await _db.Roosterdiensten.AsNoTracking()
             .Include(d => d.Medewerker)
             .Where(d => d.Datum >= van && d.Datum <= tot && d.Roosterweek!.Status == RoosterStatus.Verstuurd)
+            .ToListAsync(ct);
+
+    /// <summary>De dagafwijkingen (dagplaatsingen) binnen een datumbereik.</summary>
+    private async Task<List<Dagplaatsing>> DagplaatsingenAsync(DateOnly van, DateOnly tot, CancellationToken ct) =>
+        await _db.Dagplaatsingen.AsNoTracking()
+            .Where(d => d.Datum >= van && d.Datum <= tot)
             .ToListAsync(ct);
 }

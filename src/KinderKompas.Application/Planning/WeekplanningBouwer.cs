@@ -8,9 +8,14 @@ namespace KinderKompas.Application.Planning;
 /// <summary>
 /// Bouwt de weekplanning-weergavedata uit reeds geladen domeingegevens. Pure functie
 /// zonder database- of UI-afhankelijkheid: de controller laadt stamgroepen (met hun
-/// kinderen) en de schoolvakanties en geeft die hier door. De aanwezigheids- en
-/// BKR-logica komt volledig uit het domein (<see cref="Aanwezigheid"/> +
-/// <see cref="BkrCalculator"/>); hier zit géén nieuwe businessregel.
+/// kinderen), de schoolvakanties en de dagafwijkingen en geeft die hier door. De
+/// aanwezigheids- en BKR-logica komt volledig uit het domein (<see cref="Dagindeling"/>
+/// bovenop <see cref="Aanwezigheid"/> + <see cref="BkrCalculator"/>); hier zit géén
+/// nieuwe businessregel.
+///
+/// De telling per groep per dag loopt via <see cref="Dagindeling"/>, zodat dagafwijkingen
+/// (ruildag, incidenteel op een andere groep, extra dag, afwezig) de groepsgrootte en de
+/// BKR beïnvloeden. Zonder afwijkingen is het resultaat identiek aan het oude gedrag.
 /// </summary>
 public static class WeekplanningBouwer
 {
@@ -27,25 +32,34 @@ public static class WeekplanningBouwer
         DateOnly enigeDatumInWeek,
         IEnumerable<Stamgroep> stamgroepen,
         IEnumerable<Schoolvakantie> vakanties,
-        IEnumerable<Roosterdienst>? diensten = null)
+        IEnumerable<Roosterdienst>? diensten = null,
+        IEnumerable<Dagplaatsing>? dagplaatsingen = null)
     {
         ArgumentNullException.ThrowIfNull(stamgroepen);
         ArgumentNullException.ThrowIfNull(vakanties);
 
         DateOnly weekBegin = WeekBeginVan(enigeDatumInWeek);
+        IReadOnlyList<Stamgroep> groepLijst =
+            stamgroepen as IReadOnlyList<Stamgroep> ?? stamgroepen.ToList();
         IReadOnlyList<Schoolvakantie> vakantieLijst =
             vakanties as IReadOnlyList<Schoolvakantie> ?? vakanties.ToList();
         IReadOnlyList<Roosterdienst> dienstLijst =
             diensten as IReadOnlyList<Roosterdienst> ?? diensten?.ToList() ?? [];
+        IReadOnlyList<Dagplaatsing> afwijkingen =
+            dagplaatsingen as IReadOnlyList<Dagplaatsing> ?? dagplaatsingen?.ToList() ?? [];
+
+        // Een dagafwijking kan een kind op een andere dan zijn thuisgroep zetten, dus de
+        // telling kijkt over ALLE geladen kinderen (elk kind hoort bij één thuisgroep).
+        IReadOnlyList<Kind> alleKinderen = groepLijst.SelectMany(s => s.Kinderen).ToList();
 
         var groepen = new List<StamgroepWeekDto>();
-        foreach (Stamgroep stamgroep in stamgroepen)
+        foreach (Stamgroep stamgroep in groepLijst)
         {
             var dagen = new List<DagPlanningDto>(OpvangdagenPerWeek);
             for (int i = 0; i < OpvangdagenPerWeek; i++)
             {
                 DateOnly datum = weekBegin.AddDays(i);
-                dagen.Add(BouwDag(datum, stamgroep.Id, stamgroep.Kinderen, vakantieLijst, dienstLijst));
+                dagen.Add(BouwDag(datum, stamgroep.Id, alleKinderen, vakantieLijst, dienstLijst, afwijkingen));
             }
 
             groepen.Add(new StamgroepWeekDto(
@@ -56,10 +70,12 @@ public static class WeekplanningBouwer
     }
 
     private static DagPlanningDto BouwDag(
-        DateOnly datum, Guid stamgroepId, IEnumerable<Kind> kinderen,
-        IReadOnlyList<Schoolvakantie> vakanties, IReadOnlyList<Roosterdienst> diensten)
+        DateOnly datum, Guid stamgroepId, IReadOnlyList<Kind> alleKinderen,
+        IReadOnlyList<Schoolvakantie> vakanties, IReadOnlyList<Roosterdienst> diensten,
+        IReadOnlyList<Dagplaatsing> afwijkingen)
     {
-        IReadOnlyList<Kind> aanwezig = Aanwezigheid.AanwezigOp(kinderen, datum, vakanties);
+        IReadOnlyList<Kind> aanwezig =
+            Dagindeling.OpGroepOpDag(alleKinderen, stamgroepId, datum, afwijkingen, vakanties);
 
         var kindDtos = aanwezig
             .Select(k => new AanwezigKindDto(

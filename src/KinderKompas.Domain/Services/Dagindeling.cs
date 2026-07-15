@@ -92,6 +92,38 @@ public static class Dagindeling
     }
 
     /// <summary>
+    /// De kinderen die op <paramref name="datum"/> effectief ergens aanwezig zijn
+    /// (op welke groep dan ook), rekening houdend met dagafwijkingen. Voor het dagfilter
+    /// "wie is er vandaag?" zonder specifieke groep.
+    /// </summary>
+    public static IReadOnlyList<Kind> AanwezigOp(
+        IEnumerable<Kind> kinderen,
+        DateOnly datum,
+        IEnumerable<Dagplaatsing> afwijkingen,
+        IEnumerable<Schoolvakantie> vakanties)
+    {
+        ArgumentNullException.ThrowIfNull(kinderen);
+        ArgumentNullException.ThrowIfNull(afwijkingen);
+        ArgumentNullException.ThrowIfNull(vakanties);
+
+        IReadOnlyDictionary<Guid, Dagplaatsing> perKind = IndexeerOpKind(afwijkingen, datum);
+        IReadOnlyList<Schoolvakantie> vakantieLijst =
+            vakanties as IReadOnlyList<Schoolvakantie> ?? vakanties.ToList();
+
+        var resultaat = new List<Kind>();
+        foreach (Kind kind in kinderen)
+        {
+            perKind.TryGetValue(kind.Id, out Dagplaatsing? afwijking);
+            if (EffectieveGroepOp(kind, datum, afwijking, vakantieLijst) is not null)
+            {
+                resultaat.Add(kind);
+            }
+        }
+
+        return resultaat;
+    }
+
+    /// <summary>
     /// De leeftijdsopbouw (<see cref="GroepSamenstelling"/>) van de kinderen die op
     /// <paramref name="datum"/> effectief op groep <paramref name="groepId"/> staan —
     /// directe input voor de <see cref="BkrCalculator"/>, nu inclusief dagafwijkingen.

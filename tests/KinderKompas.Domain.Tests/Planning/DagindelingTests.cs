@@ -176,4 +176,27 @@ public class DagindelingTests
         Assert.Equal(1, samenstellingA.Totaal);
         Assert.Equal(1, samenstellingB.Totaal);
     }
+
+    [Fact]
+    public void AanwezigOp_TeltAanwezigOpWelkeGroepDanOok_MaarNietDeAfwezigen()
+    {
+        Kind blijft = MaakKind(GroepA);          // regulier aanwezig op A
+        Kind flexNaarB = MaakKind(GroepA);       // incidenteel naar B
+        Kind afwezig = MaakKind(GroepA);         // afwezig-afwijking
+        var kinderen = new[] { blijft, flexNaarB, afwezig };
+        var afwijkingen = new[]
+        {
+            Afwijking(flexNaarB, Woensdag, GroepB, DagplaatsingSoort.Incidenteel),
+            Afwijking(afwezig, Woensdag, groep: null, DagplaatsingSoort.Afwezig),
+        };
+
+        IReadOnlyList<Kind> aanwezig =
+            Dagindeling.AanwezigOp(kinderen, Woensdag, afwijkingen, GeenVakanties);
+
+        // 'blijft' (op A) en 'flexNaarB' (op B) tellen; 'afwezig' niet.
+        Assert.Equal(2, aanwezig.Count);
+        Assert.Contains(blijft, aanwezig);
+        Assert.Contains(flexNaarB, aanwezig);
+        Assert.DoesNotContain(afwezig, aanwezig);
+    }
 }
