@@ -139,11 +139,19 @@ public sealed class GroepsportaalController : ControllerBase
         return Ok(new GroepsportaalDagDto(dag, week?.IsVerstuurd ?? false, regels));
     }
 
-    /// <summary>De medewerkers om uit te kiezen bij het inklokken (alleen id + naam).</summary>
+    /// <summary>
+    /// De medewerkers om uit te kiezen bij het inklokken (alleen id + naam). Enkel
+    /// medewerkers MET een gekoppeld account verschijnen: alleen zij kunnen zich met
+    /// hun wachtwoord verifiëren (identiteitscheck). Voor een gescoped portaal beperkt
+    /// tot de eigen stamgroep.
+    /// </summary>
     [HttpGet("medewerkers")]
     public async Task<ActionResult<IReadOnlyList<PortaalMedewerkerDto>>> Medewerkers(CancellationToken ct)
     {
+        Guid? gid = GroepId;
         var medewerkers = await _db.Medewerkers.AsNoTracking()
+            .Where(m => m.IdentityUserId != null)
+            .Where(m => gid == null || m.VasteStamgroepId == gid)
             .OrderBy(m => m.Achternaam).ThenBy(m => m.Voornaam)
             .Select(m => new PortaalMedewerkerDto(m.Id, m.Voornaam + " " + m.Achternaam))
             .ToListAsync(ct);
@@ -190,9 +198,19 @@ public sealed class GroepsportaalController : ControllerBase
         }
 
         // Identiteitscheck: de medewerker bevestigt met het eigen account-wachtwoord
-        // (hetzelfde als in het medewerkers-portaal). null = geen gekoppeld account, dan
-        // is verificatie niet mogelijk en klokt de medewerker zonder wachtwoord.
+        // (hetzelfde als in het medewerkers-portaal). Zonder verifieerbare identiteit
+        // (geen account, of onjuist wachtwoord) kan er NIET worden ingeklokt — zo kan
+        // niemand een collega klokken.
         bool? wachtwoordKlopt = await _wachtwoord.KloptVoorMedewerkerAsync(medewerker.Id, invoer.Wachtwoord);
+        if (wachtwoordKlopt is null)
+        {
+            return Conflict(new ProblemDetails
+            {
+                Title = "Geen account",
+                Detail = "Deze medewerker heeft nog geen account en kan zich niet verifiëren. " +
+                         "Vraag de beheerder om een account aan te maken.",
+            });
+        }
         if (wachtwoordKlopt == false)
         {
             return Conflict(new ProblemDetails
