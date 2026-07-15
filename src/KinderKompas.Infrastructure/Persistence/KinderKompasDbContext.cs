@@ -48,6 +48,7 @@ public class KinderKompasDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<VoorstelDag> VoorstelDagen => Set<VoorstelDag>();
     public DbSet<Observatie> Observaties => Set<Observatie>();
     public DbSet<Urenregistratie> Urenregistraties => Set<Urenregistratie>();
+    public DbSet<Dagplaatsing> Dagplaatsingen => Set<Dagplaatsing>();
     public DbSet<Melding> Meldingen => Set<Melding>();
     public DbSet<OrganisatieInstellingen> OrganisatieInstellingen => Set<OrganisatieInstellingen>();
 
@@ -294,6 +295,23 @@ public class KinderKompasDbContext : IdentityDbContext<ApplicationUser>
                 .HasForeignKey(u => u.StamgroepId).OnDelete(DeleteBehavior.Restrict);
         });
 
+        modelBuilder.Entity<Dagplaatsing>(b =>
+        {
+            b.Property(d => d.Notitie).HasMaxLength(500);
+
+            // Hooguit één afwijking per kind per dag; de dag-/groepsquery leunt hierop.
+            b.HasIndex(d => new { d.KindId, d.Datum }).IsUnique();
+            b.HasIndex(d => new { d.OrganisatieId, d.Datum });
+
+            // Verdwijnt het kind, dan verdwijnen zijn dagafwijkingen mee.
+            b.HasOne(d => d.Kind).WithMany()
+                .HasForeignKey(d => d.KindId).OnDelete(DeleteBehavior.Cascade);
+            // De (optionele) groep van de afwijking; Restrict zodat een groep niet
+            // verdwijnt terwijl er dagplaatsingen naar verwijzen. Null = afwezig.
+            b.HasOne(d => d.Stamgroep).WithMany()
+                .HasForeignKey(d => d.StamgroepId).OnDelete(DeleteBehavior.Restrict);
+        });
+
         modelBuilder.Entity<Melding>(b =>
         {
             b.Property(m => m.Titel).HasMaxLength(200).IsRequired();
@@ -337,6 +355,7 @@ public class KinderKompasDbContext : IdentityDbContext<ApplicationUser>
         modelBuilder.Entity<VoorstelDag>().HasQueryFilter(e => e.OrganisatieId == _tenantProvider.CurrentOrganisatieId);
         modelBuilder.Entity<Observatie>().HasQueryFilter(e => e.OrganisatieId == _tenantProvider.CurrentOrganisatieId);
         modelBuilder.Entity<Urenregistratie>().HasQueryFilter(e => e.OrganisatieId == _tenantProvider.CurrentOrganisatieId);
+        modelBuilder.Entity<Dagplaatsing>().HasQueryFilter(e => e.OrganisatieId == _tenantProvider.CurrentOrganisatieId);
         modelBuilder.Entity<Melding>().HasQueryFilter(e => e.OrganisatieId == _tenantProvider.CurrentOrganisatieId);
         modelBuilder.Entity<OrganisatieInstellingen>().HasQueryFilter(e => e.OrganisatieId == _tenantProvider.CurrentOrganisatieId);
 

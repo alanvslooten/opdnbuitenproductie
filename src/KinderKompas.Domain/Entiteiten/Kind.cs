@@ -23,7 +23,12 @@ public class Kind : TenantEntiteit
     /// </summary>
     public List<Oudercontact> Oudercontacten { get; set; } = new();
 
-    /// <summary>De fysieke stamgroep waarin het kind is geplaatst.</summary>
+    /// <summary>
+    /// De vaste <b>thuisgroep</b> van het kind: het pedagogische anker voor
+    /// oudergegevens, mentor en observaties, en de default voor de dagindeling.
+    /// Afwijkingen per dag (ruildag, incidenteel op een andere groep, afwezig) lopen
+    /// via <see cref="Dagplaatsing"/>; zie <see cref="Services.Dagindeling"/>.
+    /// </summary>
     public Guid StamgroepId { get; set; }
     public Stamgroep? Stamgroep { get; set; }
 
