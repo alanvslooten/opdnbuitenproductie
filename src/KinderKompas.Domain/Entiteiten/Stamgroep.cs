@@ -11,17 +11,21 @@ public class Stamgroep : TenantEntiteit
 {
     public required string Naam { get; set; }
 
-    /// <summary>Maximaal aantal kindplaatsen in deze groep.</summary>
+    /// <summary>
+    /// Maximaal aantal kinderen dat PER DAG in deze groep aanwezig mag zijn (planning/BKR).
+    /// Dit is bewust géén limiet op het totaal aantal thuisgroep-kinderen: die zijn over
+    /// de week verspreid, dus een groep mag onbeperkt kinderen als thuisgroep hebben.
+    /// </summary>
     public int MaxKinderen { get; set; } = 12;
 
     public Organisatie? Organisatie { get; set; }
     public ICollection<Kind> Kinderen { get; set; } = new List<Kind>();
 
     /// <summary>
-    /// Of er nog plaats is om bij het gegeven huidige aantal kinderen er één bij te
-    /// plaatsen zonder het groepsmaximum te overschrijden. Voorkomt de "13e plaatsing"
-    /// in een groep van 12.
+    /// Of er bij het gegeven aantal aanwezige kinderen op een dag nog één bij kan zonder
+    /// het dag-maximum te overschrijden. Wordt gebruikt voor de bezetting PER DAG (bijv.
+    /// de voorstel-projectie), niet voor het totaal aantal thuisgroep-kinderen.
     /// </summary>
-    public bool HeeftPlaatsVoorExtraKind(int huidigAantalKinderen) =>
-        huidigAantalKinderen < MaxKinderen;
+    public bool HeeftPlaatsVoorExtraKind(int aantalAanwezigOpDag) =>
+        aantalAanwezigOpDag < MaxKinderen;
 }

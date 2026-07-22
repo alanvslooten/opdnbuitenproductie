@@ -66,14 +66,15 @@ export function StamgroepenPage() {
             <label>Naam</label>
             <input value={naam} onChange={(e) => setNaam(e.target.value)} required />
           </div>
-          <div className="fld" style={{ marginBottom: 0, width: 120 }}>
-            <label>Max. kinderen</label>
+          <div className="fld" style={{ marginBottom: 0, width: 130 }}>
+            <label>Max. per dag</label>
             <input
               type="number"
               min={1}
               max={16}
               value={maxKinderen}
               onChange={(e) => setMaxKinderen(Number(e.target.value))}
+              title="Maximaal aantal kinderen per dag (weekplanning/BKR); het totaal aantal kinderen in de groep is onbeperkt."
             />
           </div>
           <button type="submit" disabled={aanmaken.isPending} className="btn btn-primary btn-sm">
@@ -94,7 +95,7 @@ export function StamgroepenPage() {
           <thead>
             <tr>
               <th>Naam</th>
-              <th>Bezetting</th>
+              <th>Kinderen · max/dag</th>
               <th></th>
             </tr>
           </thead>
@@ -103,15 +104,8 @@ export function StamgroepenPage() {
               <tr key={g.id}>
                 <td style={{ fontWeight: 600 }}>{g.naam}</td>
                 <td>
-                  <span
-                    style={
-                      g.aantalKinderen >= g.maxKinderen
-                        ? { fontWeight: 700, color: 'var(--rose)' }
-                        : undefined
-                    }
-                  >
-                    {g.aantalKinderen} / {g.maxKinderen}
-                  </span>
+                  <span style={{ fontWeight: 600 }}>{g.aantalKinderen}</span>
+                  <span style={{ color: 'var(--text3)' }}> kinderen · max {g.maxKinderen}/dag</span>
                 </td>
                 <td style={{ textAlign: 'right' }}>
                   <button onClick={() => startVerwijderen(g.id, g.naam)} className="btn btn-rose btn-xs">

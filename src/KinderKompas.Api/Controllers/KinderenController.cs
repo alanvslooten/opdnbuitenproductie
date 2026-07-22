@@ -168,38 +168,23 @@ public sealed class KinderenController : ControllerBase
     }
 
     /// <summary>
-    /// Controleert dat de stamgroep bestaat en dat plaatsing het groepsmaximum niet
-    /// overschrijdt (de "13e plaatsing"). Bij een update telt het kind zelf niet mee.
-    /// Geeft <c>null</c> als alles in orde is, anders een passend foutresultaat.
+    /// Controleert dat de stamgroep bestaat. Er is bewust GÉÉN totaal-limiet op het
+    /// aantal kinderen in een thuisgroep: <c>MaxKinderen</c> is de max bezetting PER DAG
+    /// (weekplanning/BKR), niet het totaal. Een groep mag dus onbeperkt kinderen als
+    /// thuisgroep hebben (bijv. ~35, verspreid over de week) — zie het dagplaatsing-
+    /// ontwerp. Geeft <c>null</c> als alles in orde is, anders een foutresultaat.
     /// </summary>
     private async Task<ActionResult?> ControleerStamgroepEnPlaats(
         Guid stamgroepId, Guid? bestaandKindId, CancellationToken ct)
     {
-        Stamgroep? groep = await _db.Stamgroepen.AsNoTracking()
-            .FirstOrDefaultAsync(s => s.Id == stamgroepId, ct);
-        if (groep is null)
+        _ = bestaandKindId; // niet meer nodig sinds de totaal-limiet verviel
+        bool bestaat = await _db.Stamgroepen.AsNoTracking().AnyAsync(s => s.Id == stamgroepId, ct);
+        if (!bestaat)
         {
             return UnprocessableEntity(new ProblemDetails
             {
                 Title = "Onbekende stamgroep",
                 Detail = "De opgegeven stamgroep bestaat niet binnen deze organisatie.",
-            });
-        }
-
-        // Bij een update telt het kind zelf niet mee in de bezetting; bij aanmaken (null)
-        // tellen alle huidige kinderen mee. NB: vergelijken met een null-Guid in SQL
-        // levert geen rijen, dus de twee gevallen bewust splitsen.
-        int huidigAantal = bestaandKindId is { } bestaand
-            ? await _db.Kinderen.CountAsync(k => k.StamgroepId == stamgroepId && k.Id != bestaand, ct)
-            : await _db.Kinderen.CountAsync(k => k.StamgroepId == stamgroepId, ct);
-
-        if (!groep.HeeftPlaatsVoorExtraKind(huidigAantal))
-        {
-            return Conflict(new ProblemDetails
-            {
-                Title = "Groep vol",
-                Detail = $"Stamgroep '{groep.Naam}' zit vol ({huidigAantal}/{groep.MaxKinderen}). " +
-                         "Plaatsing zou het groepsmaximum overschrijden.",
             });
         }
 

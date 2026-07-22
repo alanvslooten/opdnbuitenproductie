@@ -100,15 +100,10 @@ public sealed class StamgroepenController : ControllerBase
             return NotFound();
         }
 
+        // MaxKinderen is de max bezetting PER DAG (weekplanning/BKR), niet het totaal
+        // aantal thuisgroep-kinderen. Het mag dus lager zijn dan het ledenaantal (die
+        // zijn immers over de week verspreid) — geen blokkade op basis van het totaal.
         int aantal = await _db.Kinderen.CountAsync(k => k.StamgroepId == id, ct);
-        if (invoer.MaxKinderen < aantal)
-        {
-            return Conflict(new ProblemDetails
-            {
-                Title = "Maximum te laag",
-                Detail = $"De groep heeft al {aantal} kinderen; het maximum kan niet lager dan dat.",
-            });
-        }
 
         groep.Naam = invoer.Naam;
         groep.MaxKinderen = invoer.MaxKinderen;
