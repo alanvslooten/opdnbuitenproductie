@@ -126,8 +126,14 @@ using (var scope = app.Services.CreateScope())
     // gebruikersnaam + wachtwoord te kunnen inloggen (werkt ook op bestaande accounts).
     bool tweeFactorVerplichten = app.Configuration.GetValue("Auth:TweeFactorVerplichten", true);
 
+    // Eenmalige noodgreep: zet 'Auth:WachtwoordenHerstellen' op true om de
+    // seed-accounts terug te zetten naar hun standaardwachtwoord (bv. als een
+    // demo-wachtwoord kwijt is). Zet 'm daarna weer uit — anders overschrijft elke
+    // deploy een door de gebruiker gekozen wachtwoord.
+    bool wachtwoordenHerstellen = app.Configuration.GetValue("Auth:WachtwoordenHerstellen", false);
+
     var seeder = scope.ServiceProvider.GetRequiredService<IdentityDataSeeder>();
-    await seeder.SeedAsync(app.Environment.IsDevelopment(), tweeFactorVerplichten);
+    await seeder.SeedAsync(app.Environment.IsDevelopment(), tweeFactorVerplichten, wachtwoordenHerstellen);
 
     // Rijke demo-dataset over alle modules (idempotent). Standaard aan; zet
     // 'DemoData:Inschakelen' op false om met een lege organisatie te starten.

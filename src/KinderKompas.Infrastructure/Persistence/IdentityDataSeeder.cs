@@ -68,7 +68,9 @@ public sealed class IdentityDataSeeder
             null, null, VasteStamgroepId: SeedConstanten.StamgroepBoefjesId),
     };
 
-    public async Task SeedAsync(bool isDevelopment, bool tweeFactorVerplichten, CancellationToken ct = default)
+    public async Task SeedAsync(
+        bool isDevelopment, bool tweeFactorVerplichten,
+        bool wachtwoordenHerstellen = false, CancellationToken ct = default)
     {
         await SeedRollenAsync();
         await VerwijderLegacyGroepsportaalAsync();
@@ -78,9 +80,55 @@ public sealed class IdentityDataSeeder
             await SeedAccountAsync(account, isDevelopment, ct);
         }
 
+        await HerstelWachtwoordenAsync(wachtwoordenHerstellen, ct);
         await ReconcileTweeFactorAsync(tweeFactorVerplichten, ct);
         await SeedDemoKindAsync(ct);
         await BackfillRoosterbasisAsync(ct);
+    }
+
+    /// <summary>
+    /// Zet — ALLEEN als <paramref name="herstellen"/> true is (config
+    /// <c>Auth:WachtwoordenHerstellen</c>) — de wachtwoorden van de bestaande
+    /// seed-accounts terug naar hun standaard-seedwaarde. Bedoeld als eenmalige
+    /// noodgreep als een demo-wachtwoord is kwijtgeraakt; standaard UIT zodat een
+    /// door een gebruiker gekozen wachtwoord niet bij elke deploy wordt overschreven.
+    /// Zet de vlag ná gebruik weer uit.
+    /// </summary>
+    private async Task HerstelWachtwoordenAsync(bool herstellen, CancellationToken ct)
+    {
+        if (!herstellen)
+        {
+            return;
+        }
+
+        foreach (AccountSeed account in Accounts)
+        {
+            ApplicationUser? gebruiker = await _users.FindByNameAsync(account.Gebruikersnaam);
+            if (gebruiker is null)
+            {
+                continue;
+            }
+
+            // Direct het wachtwoord vervangen (Remove + Add) i.p.v. een reset-token: deze
+            // app registreert geen Default-tokenprovider, dus GeneratePasswordResetToken
+            // zou een uitzondering geven. Remove+Add werkt op de hash zonder token.
+            if (await _users.HasPasswordAsync(gebruiker))
+            {
+                await _users.RemovePasswordAsync(gebruiker);
+            }
+            IdentityResult resultaat = await _users.AddPasswordAsync(gebruiker, account.Wachtwoord);
+            if (resultaat.Succeeded)
+            {
+                _log.LogWarning(
+                    "Wachtwoord van '{Gebruiker}' hersteld naar de seed-standaard (Auth:WachtwoordenHerstellen staat AAN — zet 'm daarna weer uit).",
+                    account.Gebruikersnaam);
+            }
+            else
+            {
+                _log.LogError("Wachtwoord-herstel voor '{Gebruiker}' mislukt: {Fouten}",
+                    account.Gebruikersnaam, string.Join("; ", resultaat.Errors.Select(e => e.Description)));
+            }
+        }
     }
 
     /// <summary>
