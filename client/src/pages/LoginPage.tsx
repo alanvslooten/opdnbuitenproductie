@@ -76,19 +76,6 @@ export function LoginPage() {
               {tweeFactor ? 'Voer je tweestapscode in' : 'Toegang tot uw dashboard'}
             </p>
 
-            {fout && (
-              <div
-                style={{
-                  color: 'var(--red)',
-                  fontSize: 11,
-                  marginBottom: 9,
-                  fontWeight: 600,
-                }}
-              >
-                {fout}
-              </div>
-            )}
-
             <div className="fld">
               <label>Gebruikersnaam</label>
               <input
@@ -133,6 +120,32 @@ export function LoginPage() {
           </form>
         </div>
       </div>
+
+      {fout && (
+        <div className="overlay on" onClick={() => setFout(null)}>
+          <div className="modal" style={{ maxWidth: 380 }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-h">
+              <h2>
+                <i className="ti ti-alert-triangle" style={{ color: 'var(--rose)' }} /> Inloggen mislukt
+              </h2>
+              <button type="button" className="xbtn" onClick={() => setFout(null)}>
+                <i className="ti ti-x" />
+              </button>
+            </div>
+            <div className="modal-b">
+              <p style={{ fontSize: 13 }}>{fout}</p>
+              <p style={{ fontSize: 12, color: 'var(--text3)', marginTop: 6 }}>
+                Controleer je gebruikersnaam en wachtwoord en probeer het opnieuw.
+              </p>
+            </div>
+            <div className="modal-f" style={{ position: 'static' }}>
+              <button type="button" className="btn btn-primary btn-sm" onClick={() => setFout(null)} autoFocus>
+                Opnieuw proberen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

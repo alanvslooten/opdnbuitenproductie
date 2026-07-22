@@ -100,11 +100,12 @@ export async function api<T>(pad: string, opties: RequestInit = {}): Promise<T> 
   const data = tekst ? JSON.parse(tekst) : undefined;
 
   if (!res.ok) {
-    const probleem = data as { title?: string; detail?: string; errors?: Record<string, string[]> } | undefined;
+    const probleem = data as { title?: string; detail?: string; fout?: string; errors?: Record<string, string[]> } | undefined;
     const losseFouten = probleem?.errors
       ? Object.values(probleem.errors).flat().join(' ')
       : undefined;
-    const bericht = losseFouten ?? probleem?.detail ?? probleem?.title ?? res.statusText;
+    // 'fout' is de vorm die de auth-endpoints teruggeven (bv. onjuist wachtwoord).
+    const bericht = losseFouten ?? probleem?.detail ?? probleem?.title ?? probleem?.fout ?? res.statusText;
     throw new ApiFout(res.status, bericht, data);
   }
 
