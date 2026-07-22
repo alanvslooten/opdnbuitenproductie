@@ -309,20 +309,28 @@ html{font-size:clamp(13px,1.1vw,15px)}
 .chip-need{background:var(--amber-l);color:var(--amber)}
 .chip-over{background:var(--rose-l);color:var(--rose)}
 
-/* Klikbare kind-chip in de weekplanning: duidelijk aantikbaar om een kind
-   incidenteel te verplaatsen (ruildag/andere groep/afwezig). Een swap-icoon
-   verschijnt bij hover als affordance; al verplaatste kinderen zijn violet gevuld. */
-.plan-kind{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:500;line-height:1.25;
-  padding:4px 9px;border-radius:var(--r-pill);background:var(--surface2);border:1px solid var(--border);
-  color:var(--text2);cursor:pointer;transition:.13s;max-width:100%}
-.plan-kind:hover{background:var(--blue-m);border-color:var(--blue);color:var(--blue)}
+/* Klikbare kind-rij in de weekplanning: onder elkaar uitgelijnd, duidelijk
+   aantikbaar om een kind incidenteel te verplaatsen (ruildag/andere groep/afwezig).
+   Een initiaal-avatar maakt het scanbaar; een swap-icoon verschijnt bij hover.
+   Al verplaatste kinderen zijn violet gemarkeerd met een kalender-icoon. */
+.plan-kinderen{display:flex;flex-direction:column;gap:5px;margin-top:8px}
+.plan-kind{display:flex;align-items:center;gap:8px;width:100%;text-align:left;
+  font-size:12.5px;font-weight:500;line-height:1.2;
+  padding:6px 10px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);
+  color:var(--text);cursor:pointer;transition:.13s}
+.plan-kind:hover{background:var(--blue-m);border-color:var(--blue)}
+.plan-kind:active{transform:scale(.98)}
 .plan-kind:focus-visible{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-m)}
-.plan-kind .kind-swap{font-size:12px;width:0;opacity:0;overflow:hidden;transition:.13s}
-.plan-kind:hover .kind-swap{width:13px;opacity:.85}
-.plan-kind-afwijk{background:var(--indigo-l);border-color:var(--indigo);color:var(--indigo);font-weight:600}
-.plan-kind-afwijk:hover{background:var(--indigo);border-color:var(--indigo);color:#fff}
-.plan-kind-afwijk .kind-cog{font-size:12px}
-.plan-kinderen{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-top:6px}
+.plan-kind .kind-avatar{flex-shrink:0;width:24px;height:24px;border-radius:50%;
+  background:var(--blue-l);color:var(--blue);display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;text-transform:uppercase}
+.plan-kind .kind-naam{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plan-kind .kind-swap{flex-shrink:0;font-size:15px;color:var(--text3);opacity:0;transition:.13s}
+.plan-kind:hover .kind-swap{opacity:1;color:var(--blue)}
+.plan-kind-afwijk{background:var(--indigo-l);border-color:var(--indigo)}
+.plan-kind-afwijk:hover{background:var(--indigo-l);border-color:var(--indigo)}
+.plan-kind-afwijk .kind-avatar{background:var(--indigo);color:#fff}
+.plan-kind-afwijk .kind-cog{flex-shrink:0;font-size:15px;color:var(--indigo)}
 
 /* ══════════════════════════════════
    TABLES

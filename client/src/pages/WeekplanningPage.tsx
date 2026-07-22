@@ -144,9 +144,13 @@ export function WeekplanningPage() {
                                   })
                                 }
                               >
-                                {heeftAfwijking && <i className="ti ti-calendar-cog kind-cog" />}
-                                {k.voornaam}
-                                {!heeftAfwijking && <i className="ti ti-arrows-exchange kind-swap" />}
+                                <span className="kind-avatar">{k.voornaam.charAt(0)}</span>
+                                <span className="kind-naam">{k.voornaam}</span>
+                                {heeftAfwijking ? (
+                                  <i className="ti ti-calendar-cog kind-cog" />
+                                ) : (
+                                  <i className="ti ti-arrows-exchange kind-swap" />
+                                )}
                               </button>
                             );
                           })}
@@ -171,8 +175,10 @@ export function WeekplanningPage() {
       <p style={{ marginTop: 12, fontSize: 10, color: 'var(--text3)', display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
         BKR-badge per dag: aantal kinderen · vereiste begeleiders. Rood = boven het wettelijk groepsmaximum.
         <span style={{ marginLeft: 6 }}>Een</span>
-        <span className="plan-kind plan-kind-afwijk" style={{ cursor: 'default', pointerEvents: 'none' }}>
-          <i className="ti ti-calendar-cog kind-cog" /> naam
+        <span className="plan-kind plan-kind-afwijk" style={{ cursor: 'default', pointerEvents: 'none', width: 'auto' }}>
+          <span className="kind-avatar">N</span>
+          <span className="kind-naam" style={{ flex: 'none' }}>naam</span>
+          <i className="ti ti-calendar-cog kind-cog" />
         </span>
         <span>markeert een kind met een gewijzigde dagplaatsing.</span>
       </p>
