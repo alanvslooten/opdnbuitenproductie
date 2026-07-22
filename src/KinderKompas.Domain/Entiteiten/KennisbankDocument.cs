@@ -29,6 +29,9 @@ public class KennisbankDocument : TenantEntiteit
     /// <summary>Of dit document aan specifieke medewerkers is toegewezen (i.p.v. voor iedereen).</summary>
     public bool IsGericht => ToegewezenMedewerkerIds.Count > 0;
 
+    /// <summary>De bijlagen (bestanden) bij dit document.</summary>
+    public ICollection<KennisbankBijlage> Bijlagen { get; set; } = new List<KennisbankBijlage>();
+
     /// <summary>
     /// Of het document zichtbaar is voor de gegeven medewerker: altijd als het voor
     /// iedereen is, anders alleen als de medewerker in de toewijzing staat.

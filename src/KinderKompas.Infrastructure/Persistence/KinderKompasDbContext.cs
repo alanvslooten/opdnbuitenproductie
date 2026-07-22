@@ -52,6 +52,7 @@ public class KinderKompasDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Melding> Meldingen => Set<Melding>();
     public DbSet<OrganisatieInstellingen> OrganisatieInstellingen => Set<OrganisatieInstellingen>();
     public DbSet<KennisbankDocument> KennisbankDocumenten => Set<KennisbankDocument>();
+    public DbSet<KennisbankBijlage> KennisbankBijlagen => Set<KennisbankBijlage>();
     public DbSet<ContactLogregel> ContactLogregels => Set<ContactLogregel>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -343,6 +344,18 @@ public class KinderKompasDbContext : IdentityDbContext<ApplicationUser>
             b.Property(d => d.Categorie).HasMaxLength(100);
             b.Property(d => d.Inhoud).HasMaxLength(20000).IsRequired();
             b.HasIndex(d => new { d.OrganisatieId, d.Categorie });
+            // Verwijdert het document → ook zijn bijlage-metadata (de bestanden zelf
+            // worden in de use-case opgeruimd via IBestandsopslag).
+            b.HasMany(d => d.Bijlagen).WithOne(x => x.Document!)
+                .HasForeignKey(x => x.KennisbankDocumentId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<KennisbankBijlage>(b =>
+        {
+            b.Property(x => x.BestandsNaam).HasMaxLength(260).IsRequired();
+            b.Property(x => x.BestandsSleutel).HasMaxLength(400).IsRequired();
+            b.Property(x => x.ContentType).HasMaxLength(150).IsRequired();
+            b.HasIndex(x => x.KennisbankDocumentId);
         });
 
         modelBuilder.Entity<OrganisatieInstellingen>(b =>
@@ -379,6 +392,7 @@ public class KinderKompasDbContext : IdentityDbContext<ApplicationUser>
         modelBuilder.Entity<Melding>().HasQueryFilter(e => e.OrganisatieId == _tenantProvider.CurrentOrganisatieId);
         modelBuilder.Entity<OrganisatieInstellingen>().HasQueryFilter(e => e.OrganisatieId == _tenantProvider.CurrentOrganisatieId);
         modelBuilder.Entity<KennisbankDocument>().HasQueryFilter(e => e.OrganisatieId == _tenantProvider.CurrentOrganisatieId);
+        modelBuilder.Entity<KennisbankBijlage>().HasQueryFilter(e => e.OrganisatieId == _tenantProvider.CurrentOrganisatieId);
         modelBuilder.Entity<ContactLogregel>().HasQueryFilter(e => e.OrganisatieId == _tenantProvider.CurrentOrganisatieId);
 
         SeedData(modelBuilder);

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api } from './client';
+import { api, apiBlob } from './client';
 import type {
   ContactDto,
   ContactDetailDto,
@@ -21,6 +21,7 @@ import type {
   InstellingenInvoer,
   KennisbankItemDto,
   KennisbankDocumentDto,
+  KennisbankBijlageDto,
   KennisbankInvoer,
   LocatieDto,
   MeldingDto,
@@ -858,5 +859,30 @@ export function useKennisbankMutaties() {
       mutationFn: (id: string) => api<void>(`/api/kennisbank/${id}`, { method: 'DELETE' }),
       onSuccess: invalideer,
     }),
+    uploadBijlage: useMutation({
+      mutationFn: ({ documentId, bestand }: { documentId: string; bestand: File }) => {
+        const fd = new FormData();
+        fd.append('bestand', bestand);
+        return api<KennisbankBijlageDto>(`/api/kennisbank/${documentId}/bijlagen`, { method: 'POST', body: fd });
+      },
+      onSuccess: invalideer,
+    }),
+    verwijderBijlage: useMutation({
+      mutationFn: (bijlageId: string) => api<void>(`/api/kennisbank/bijlagen/${bijlageId}`, { method: 'DELETE' }),
+      onSuccess: invalideer,
+    }),
   };
+}
+
+/** Download een kennisbank-bijlage (met auth) en biedt hem als bestand aan. */
+export async function downloadKennisbankBijlage(bijlageId: string, bestandsNaam: string): Promise<void> {
+  const blob = await apiBlob(`/api/kennisbank/bijlagen/${bijlageId}/download`);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = bestandsNaam;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }

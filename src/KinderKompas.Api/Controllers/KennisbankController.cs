@@ -22,16 +22,22 @@ namespace KinderKompas.Api.Controllers;
 [Authorize(Policy = Capabilities.MagThuisportaalGebruiken)]
 public sealed class KennisbankController : ControllerBase
 {
+    private const string BijlageMap = "kennisbank";
+    private const long MaxBestandsgrootte = 20 * 1024 * 1024; // 20 MB
+
     private readonly KinderKompasDbContext _db;
     private readonly IValidator<KennisbankInvoer> _validator;
     private readonly ICurrentUser _huidigeGebruiker;
+    private readonly IBestandsopslag _opslag;
 
     public KennisbankController(
-        KinderKompasDbContext db, IValidator<KennisbankInvoer> validator, ICurrentUser huidigeGebruiker)
+        KinderKompasDbContext db, IValidator<KennisbankInvoer> validator,
+        ICurrentUser huidigeGebruiker, IBestandsopslag opslag)
     {
         _db = db;
         _validator = validator;
         _huidigeGebruiker = huidigeGebruiker;
+        _opslag = opslag;
     }
 
     // De beheerder ziet en beheert alle documenten; een medewerker ziet alleen
@@ -45,16 +51,19 @@ public sealed class KennisbankController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<KennisbankItemDto>>> Lijst(CancellationToken ct)
     {
         var documenten = await _db.KennisbankDocumenten.AsNoTracking()
+            .Include(d => d.Bijlagen)
             .OrderBy(d => d.Categorie).ThenBy(d => d.Titel)
             .ToListAsync(ct);
         return Ok(documenten.Where(MagZien).Select(KennisbankMapper.NaarItem).ToList());
     }
 
-    /// <summary>Eén document met volledige inhoud.</summary>
+    /// <summary>Eén document met volledige inhoud en bijlagen.</summary>
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<KennisbankDocumentDto>> Detail(Guid id, CancellationToken ct)
     {
-        KennisbankDocument? doc = await _db.KennisbankDocumenten.AsNoTracking().FirstOrDefaultAsync(d => d.Id == id, ct);
+        KennisbankDocument? doc = await _db.KennisbankDocumenten.AsNoTracking()
+            .Include(d => d.Bijlagen)
+            .FirstOrDefaultAsync(d => d.Id == id, ct);
         if (doc is null || !MagZien(doc))
         {
             return NotFound();
@@ -112,10 +121,37 @@ public sealed class KennisbankController : ControllerBase
         return Ok(KennisbankMapper.NaarDto(doc));
     }
 
-    /// <summary>Een document verwijderen (beheerder).</summary>
+    /// <summary>Een document verwijderen (beheerder), inclusief zijn bijlage-bestanden.</summary>
     [HttpDelete("{id:guid}")]
     [Authorize(Policy = Capabilities.MagInstellingenBeheren)]
     public async Task<IActionResult> Verwijderen(Guid id, CancellationToken ct)
+    {
+        KennisbankDocument? doc = await _db.KennisbankDocumenten
+            .Include(d => d.Bijlagen)
+            .FirstOrDefaultAsync(d => d.Id == id, ct);
+        if (doc is null)
+        {
+            return NotFound();
+        }
+
+        // Eerst de fysieke bestanden opruimen (cascade ruimt alleen de DB-metadata).
+        foreach (KennisbankBijlage bijlage in doc.Bijlagen)
+        {
+            await _opslag.VerwijderAsync(bijlage.BestandsSleutel, ct);
+        }
+
+        _db.KennisbankDocumenten.Remove(doc);
+        await _db.SaveChangesAsync(ct);
+        return NoContent();
+    }
+
+    // ---- Bijlagen ------------------------------------------------------------
+
+    /// <summary>Een bijlage (bestand) bij een document uploaden (beheerder).</summary>
+    [HttpPost("{id:guid}/bijlagen")]
+    [Authorize(Policy = Capabilities.MagInstellingenBeheren)]
+    [RequestSizeLimit(MaxBestandsgrootte + 4096)]
+    public async Task<ActionResult<KennisbankBijlageDto>> BijlageUploaden(Guid id, IFormFile? bestand, CancellationToken ct)
     {
         KennisbankDocument? doc = await _db.KennisbankDocumenten.FirstOrDefaultAsync(d => d.Id == id, ct);
         if (doc is null)
@@ -123,7 +159,70 @@ public sealed class KennisbankController : ControllerBase
             return NotFound();
         }
 
-        _db.KennisbankDocumenten.Remove(doc);
+        if (bestand is null || bestand.Length == 0)
+        {
+            return UnprocessableEntity(new ProblemDetails { Title = "Geen bestand", Detail = "Kies een bestand om te uploaden." });
+        }
+        if (bestand.Length > MaxBestandsgrootte)
+        {
+            return UnprocessableEntity(new ProblemDetails { Title = "Bestand te groot", Detail = "Een bijlage mag maximaal 20 MB zijn." });
+        }
+
+        string sleutel;
+        await using (Stream inhoud = bestand.OpenReadStream())
+        {
+            sleutel = await _opslag.OpslaanAsync(BijlageMap, bestand.FileName, inhoud, ct);
+        }
+
+        var bijlage = new KennisbankBijlage
+        {
+            KennisbankDocumentId = doc.Id,
+            BestandsNaam = Path.GetFileName(bestand.FileName),
+            BestandsSleutel = sleutel,
+            ContentType = string.IsNullOrWhiteSpace(bestand.ContentType) ? "application/octet-stream" : bestand.ContentType,
+            BestandsGrootte = bestand.Length,
+        };
+        _db.KennisbankBijlagen.Add(bijlage);
+        await _db.SaveChangesAsync(ct);
+        return Ok(KennisbankMapper.NaarBijlage(bijlage));
+    }
+
+    /// <summary>Een bijlage downloaden (iedereen die het document mag zien).</summary>
+    [HttpGet("bijlagen/{bijlageId:guid}/download")]
+    public async Task<IActionResult> BijlageDownloaden(Guid bijlageId, CancellationToken ct)
+    {
+        KennisbankBijlage? bijlage = await _db.KennisbankBijlagen.AsNoTracking()
+            .Include(b => b.Document)
+            .FirstOrDefaultAsync(b => b.Id == bijlageId, ct);
+        if (bijlage is null || bijlage.Document is null || !MagZien(bijlage.Document))
+        {
+            return NotFound();
+        }
+
+        Stream? inhoud = await _opslag.OpenenAsync(bijlage.BestandsSleutel, ct);
+        if (inhoud is null)
+        {
+            return NotFound();
+        }
+
+        // Met bestandsnaam → Content-Disposition attachment: de browser downloadt i.p.v.
+        // (mogelijk onveilige) inhoud inline te renderen.
+        return File(inhoud, bijlage.ContentType, bijlage.BestandsNaam);
+    }
+
+    /// <summary>Een bijlage verwijderen (beheerder).</summary>
+    [HttpDelete("bijlagen/{bijlageId:guid}")]
+    [Authorize(Policy = Capabilities.MagInstellingenBeheren)]
+    public async Task<IActionResult> BijlageVerwijderen(Guid bijlageId, CancellationToken ct)
+    {
+        KennisbankBijlage? bijlage = await _db.KennisbankBijlagen.FirstOrDefaultAsync(b => b.Id == bijlageId, ct);
+        if (bijlage is null)
+        {
+            return NotFound();
+        }
+
+        await _opslag.VerwijderAsync(bijlage.BestandsSleutel, ct);
+        _db.KennisbankBijlagen.Remove(bijlage);
         await _db.SaveChangesAsync(ct);
         return NoContent();
     }

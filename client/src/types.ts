@@ -845,12 +845,20 @@ export interface SchoolvakantieInvoer {
 }
 
 // === Kennisbank (interne naslag voor medewerkers) ===
+export interface KennisbankBijlageDto {
+  id: string;
+  bestandsNaam: string;
+  contentType: string;
+  bestandsGrootte: number;
+}
+
 export interface KennisbankItemDto {
   id: string;
   titel: string;
   categorie: string | null;
   gewijzigdOp: Iso;
   toegewezenMedewerkerIds: string[];
+  aantalBijlagen: number;
 }
 
 export interface KennisbankDocumentDto {
@@ -860,6 +868,7 @@ export interface KennisbankDocumentDto {
   inhoud: string;
   gewijzigdOp: Iso;
   toegewezenMedewerkerIds: string[];
+  bijlagen: KennisbankBijlageDto[];
 }
 
 export interface KennisbankInvoer {

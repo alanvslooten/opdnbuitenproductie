@@ -1,8 +1,20 @@
-import { useMemo, useState } from 'react';
-import { useKennisbank, useKennisbankDocument, useKennisbankMutaties, useMedewerkers } from '../api/queries';
+import { useMemo, useRef, useState } from 'react';
+import {
+  downloadKennisbankBijlage,
+  useKennisbank,
+  useKennisbankDocument,
+  useKennisbankMutaties,
+  useMedewerkers,
+} from '../api/queries';
 import { useAuth } from '../auth/AuthContext';
 import { Capabilities, type KennisbankItemDto } from '../types';
 import { korteDatum } from '../datum';
+
+function bestandsgrootte(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 interface BewerkState {
   id: string | null;
@@ -26,9 +38,15 @@ export function KennisbankPage() {
   const { data: medewerkers } = useMedewerkers();
   const [gekozenId, setGekozenId] = useState<string | null>(null);
   const { data: document } = useKennisbankDocument(gekozenId ?? undefined);
-  const { toevoegen, bijwerken, verwijderen } = useKennisbankMutaties();
+  const { toevoegen, bijwerken, verwijderen, uploadBijlage, verwijderBijlage } = useKennisbankMutaties();
 
   const [bewerkt, setBewerkt] = useState<BewerkState | null>(null);
+  const bestandKiezer = useRef<HTMLInputElement>(null);
+
+  function kiesBestand(documentId: string, bestand: File | undefined) {
+    if (bestand) uploadBijlage.mutate({ documentId, bestand });
+    if (bestandKiezer.current) bestandKiezer.current.value = '';
+  }
 
   const naamVan = (id: string) => {
     const m = medewerkers?.find((x) => x.id === id);
@@ -102,6 +120,9 @@ export function KennisbankPage() {
                   }}
                 >
                   <span style={{ flex: 1 }}>{item.titel}</span>
+                  {item.aantalBijlagen > 0 && (
+                    <i className="ti ti-paperclip" style={{ fontSize: 12, color: 'var(--text3)' }} title={`${item.aantalBijlagen} bijlage(n)`} />
+                  )}
                   {item.toegewezenMedewerkerIds.length > 0 && (
                     <i className="ti ti-user-check" style={{ fontSize: 12, color: 'var(--violet)' }} title="Toegewezen aan specifieke medewerkers" />
                   )}
@@ -153,6 +174,60 @@ export function KennisbankPage() {
               </div>
 
               <div style={{ whiteSpace: 'pre-wrap', fontSize: 13, lineHeight: 1.6, marginTop: 14 }}>{document.inhoud}</div>
+
+              <div style={{ marginTop: 18, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
+                  <h3 style={{ fontSize: 13 }}><i className="ti ti-paperclip" /> Bijlagen</h3>
+                  {magBeheren && (
+                    <>
+                      <input
+                        ref={bestandKiezer}
+                        type="file"
+                        style={{ display: 'none' }}
+                        onChange={(e) => kiesBestand(document.id, e.target.files?.[0])}
+                      />
+                      <button
+                        className="btn btn-outline btn-xs"
+                        disabled={uploadBijlage.isPending}
+                        onClick={() => bestandKiezer.current?.click()}
+                      >
+                        <i className="ti ti-upload" /> {uploadBijlage.isPending ? 'Uploaden…' : 'Bijlage toevoegen'}
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                {document.bijlagen.length === 0 ? (
+                  <p style={{ fontSize: 12, color: 'var(--text3)' }}>Geen bijlagen.</p>
+                ) : (
+                  document.bijlagen.map((b) => (
+                    <div
+                      key={b.id}
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid var(--border)', fontSize: 12 }}
+                    >
+                      <i className="ti ti-file" style={{ color: 'var(--text3)' }} />
+                      <button
+                        className="lnk"
+                        style={{ flex: 1, textAlign: 'left', background: 'none', border: 'none', color: 'var(--blue)', cursor: 'pointer', fontSize: 12 }}
+                        onClick={() => downloadKennisbankBijlage(b.id, b.bestandsNaam)}
+                        title="Downloaden"
+                      >
+                        {b.bestandsNaam}
+                      </button>
+                      <span style={{ color: 'var(--text3)' }}>{bestandsgrootte(b.bestandsGrootte)}</span>
+                      {magBeheren && (
+                        <button
+                          className="btn btn-ghost btn-xs"
+                          title="Bijlage verwijderen"
+                          onClick={() => verwijderBijlage.mutate(b.id)}
+                        >
+                          <i className="ti ti-trash" style={{ color: 'var(--rose)' }} />
+                        </button>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
             </>
           ) : (
             <p style={{ fontSize: 13, color: 'var(--text3)' }}>Kies links een document om te lezen.</p>
