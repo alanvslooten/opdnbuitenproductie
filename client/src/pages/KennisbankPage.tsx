@@ -1,25 +1,39 @@
 import { useMemo, useState } from 'react';
-import { useKennisbank, useKennisbankDocument, useKennisbankMutaties } from '../api/queries';
+import { useKennisbank, useKennisbankDocument, useKennisbankMutaties, useMedewerkers } from '../api/queries';
 import { useAuth } from '../auth/AuthContext';
 import { Capabilities, type KennisbankItemDto } from '../types';
 import { korteDatum } from '../datum';
 
-const LEEG = { titel: '', categorie: '', inhoud: '' };
+interface BewerkState {
+  id: string | null;
+  titel: string;
+  categorie: string;
+  inhoud: string;
+  toegewezen: string[]; // medewerker-ids; leeg = voor iedereen
+}
+
+const LEEG: Omit<BewerkState, 'id'> = { titel: '', categorie: '', inhoud: '', toegewezen: [] };
 
 /**
  * Interne kennisbank: read-only naslag voor medewerkers (protocollen, pedagogisch
- * beleidsplan, kledingvoorschriften). Iedereen leest hetzelfde; de beheerder onderhoudt
- * de documenten. Ook thuis inzichtelijk.
+ * beleidsplan, kledingvoorschriften). De beheerder onderhoudt de documenten en kan een
+ * document aan specifieke medewerkers toewijzen (leeg = voor iedereen). Ook thuis inzichtelijk.
  */
 export function KennisbankPage() {
   const { heeft } = useAuth();
   const magBeheren = heeft(Capabilities.InstellingenBeheren);
   const { data: lijst, isLoading } = useKennisbank();
+  const { data: medewerkers } = useMedewerkers();
   const [gekozenId, setGekozenId] = useState<string | null>(null);
   const { data: document } = useKennisbankDocument(gekozenId ?? undefined);
   const { toevoegen, bijwerken, verwijderen } = useKennisbankMutaties();
 
-  const [bewerkt, setBewerkt] = useState<null | { id: string | null; titel: string; categorie: string; inhoud: string }>(null);
+  const [bewerkt, setBewerkt] = useState<BewerkState | null>(null);
+
+  const naamVan = (id: string) => {
+    const m = medewerkers?.find((x) => x.id === id);
+    return m ? `${m.voornaam} ${m.achternaam}` : 'medewerker';
+  };
 
   // Documenten gegroepeerd per categorie voor een overzichtelijke lijst.
   const perCategorie = useMemo(() => {
@@ -33,10 +47,21 @@ export function KennisbankPage() {
 
   async function bewaar() {
     if (!bewerkt) return;
-    const invoer = { titel: bewerkt.titel, categorie: bewerkt.categorie || null, inhoud: bewerkt.inhoud };
+    const invoer = {
+      titel: bewerkt.titel,
+      categorie: bewerkt.categorie || null,
+      inhoud: bewerkt.inhoud,
+      toegewezenMedewerkerIds: bewerkt.toegewezen,
+    };
     if (bewerkt.id) await bijwerken.mutateAsync({ id: bewerkt.id, invoer });
     else await toevoegen.mutateAsync(invoer);
     setBewerkt(null);
+  }
+
+  function toggleMedewerker(id: string) {
+    setBewerkt((b) =>
+      b ? { ...b, toegewezen: b.toegewezen.includes(id) ? b.toegewezen.filter((x) => x !== id) : [...b.toegewezen, id] } : b,
+    );
   }
 
   return (
@@ -44,7 +69,7 @@ export function KennisbankPage() {
       <div className="ph">
         <div>
           <h1>Kennisbank</h1>
-          <p>Protocollen, beleid en afspraken — voor iedereen gelijk, ook thuis</p>
+          <p>Protocollen, beleid en afspraken — voor iedereen of toegewezen aan medewerkers</p>
         </div>
         {magBeheren && (
           <button className="btn btn-primary btn-sm" onClick={() => setBewerkt({ id: null, ...LEEG })}>
@@ -71,12 +96,15 @@ export function KennisbankPage() {
                   onClick={() => setGekozenId(item.id)}
                   className="lnk"
                   style={{
-                    display: 'block', width: '100%', textAlign: 'left', padding: '6px 8px', border: 'none',
+                    display: 'flex', alignItems: 'center', gap: 6, width: '100%', textAlign: 'left', padding: '6px 8px', border: 'none',
                     background: gekozenId === item.id ? 'var(--surface2)' : 'none', borderRadius: 6,
                     cursor: 'pointer', color: 'var(--text)', fontSize: 13,
                   }}
                 >
-                  {item.titel}
+                  <span style={{ flex: 1 }}>{item.titel}</span>
+                  {item.toegewezenMedewerkerIds.length > 0 && (
+                    <i className="ti ti-user-check" style={{ fontSize: 12, color: 'var(--violet)' }} title="Toegewezen aan specifieke medewerkers" />
+                  )}
                 </button>
               ))}
             </div>
@@ -97,7 +125,10 @@ export function KennisbankPage() {
                   <div style={{ display: 'flex', gap: 6 }}>
                     <button
                       className="btn btn-outline btn-xs"
-                      onClick={() => setBewerkt({ id: document.id, titel: document.titel, categorie: document.categorie ?? '', inhoud: document.inhoud })}
+                      onClick={() => setBewerkt({
+                        id: document.id, titel: document.titel, categorie: document.categorie ?? '',
+                        inhoud: document.inhoud, toegewezen: document.toegewezenMedewerkerIds,
+                      })}
                     >
                       <i className="ti ti-edit" /> Bewerken
                     </button>
@@ -110,7 +141,18 @@ export function KennisbankPage() {
                   </div>
                 )}
               </div>
-              <div style={{ whiteSpace: 'pre-wrap', fontSize: 13, lineHeight: 1.6, marginTop: 12 }}>{document.inhoud}</div>
+
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                {document.toegewezenMedewerkerIds.length === 0 ? (
+                  <span className="badge b-gray"><i className="ti ti-users" /> Voor iedereen</span>
+                ) : (
+                  document.toegewezenMedewerkerIds.map((id) => (
+                    <span key={id} className="badge b-violet"><i className="ti ti-user" /> {naamVan(id)}</span>
+                  ))
+                )}
+              </div>
+
+              <div style={{ whiteSpace: 'pre-wrap', fontSize: 13, lineHeight: 1.6, marginTop: 14 }}>{document.inhoud}</div>
             </>
           ) : (
             <p style={{ fontSize: 13, color: 'var(--text3)' }}>Kies links een document om te lezen.</p>
@@ -120,7 +162,7 @@ export function KennisbankPage() {
 
       {bewerkt && (
         <div className="overlay on" onClick={() => setBewerkt(null)}>
-          <div className="modal" style={{ maxWidth: 640 }} onClick={(e) => e.stopPropagation()}>
+          <div className="modal" style={{ width: 'min(780px, 94vw)', maxWidth: 'none' }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-h">
               <h2><i className="ti ti-book" /> {bewerkt.id ? 'Document bewerken' : 'Nieuw document'}</h2>
               <button className="xbtn" onClick={() => setBewerkt(null)}><i className="ti ti-x" /></button>
@@ -129,16 +171,62 @@ export function KennisbankPage() {
               <div className="frow" style={{ gridTemplateColumns: '2fr 1fr' }}>
                 <div className="fld">
                   <label>Titel</label>
-                  <input value={bewerkt.titel} onChange={(e) => setBewerkt({ ...bewerkt, titel: e.target.value })} />
+                  <input autoFocus value={bewerkt.titel} onChange={(e) => setBewerkt({ ...bewerkt, titel: e.target.value })} />
                 </div>
                 <div className="fld">
                   <label>Categorie</label>
                   <input value={bewerkt.categorie} placeholder="Protocollen…" onChange={(e) => setBewerkt({ ...bewerkt, categorie: e.target.value })} />
                 </div>
               </div>
-              <div className="fld" style={{ marginBottom: 0 }}>
+
+              <div className="fld">
                 <label>Inhoud</label>
-                <textarea rows={12} value={bewerkt.inhoud} onChange={(e) => setBewerkt({ ...bewerkt, inhoud: e.target.value })} />
+                <textarea
+                  className="xl"
+                  rows={12}
+                  value={bewerkt.inhoud}
+                  onChange={(e) => setBewerkt({ ...bewerkt, inhoud: e.target.value })}
+                />
+              </div>
+
+              <div className="fld" style={{ marginBottom: 0 }}>
+                <label>Zichtbaar voor</label>
+                <p style={{ fontSize: 11, color: 'var(--text3)', margin: '0 0 8px' }}>
+                  {bewerkt.toegewezen.length === 0
+                    ? 'Niemand geselecteerd = zichtbaar voor iedereen. Vink medewerkers aan om het document alleen aan hen toe te wijzen.'
+                    : `Toegewezen aan ${bewerkt.toegewezen.length} medewerker(s). De beheerder ziet het altijd.`}
+                </p>
+                <div
+                  style={{
+                    display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 4,
+                    maxHeight: 160, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', padding: 8,
+                  }}
+                >
+                  {(medewerkers ?? []).length === 0 && (
+                    <span style={{ fontSize: 12, color: 'var(--text3)' }}>Geen medewerkers gevonden.</span>
+                  )}
+                  {(medewerkers ?? []).map((m) => (
+                    <label key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={bewerkt.toegewezen.includes(m.id)}
+                        onChange={() => toggleMedewerker(m.id)}
+                        style={{ width: 'auto' }}
+                      />
+                      {m.voornaam} {m.achternaam}
+                    </label>
+                  ))}
+                </div>
+                {bewerkt.toegewezen.length > 0 && (
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-xs"
+                    style={{ marginTop: 6 }}
+                    onClick={() => setBewerkt({ ...bewerkt, toegewezen: [] })}
+                  >
+                    <i className="ti ti-users" /> Voor iedereen maken
+                  </button>
+                )}
               </div>
             </div>
             <div className="modal-f" style={{ position: 'static' }}>

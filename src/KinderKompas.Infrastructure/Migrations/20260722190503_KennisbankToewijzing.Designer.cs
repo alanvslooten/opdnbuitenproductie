@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using KinderKompas.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace KinderKompas.Infrastructure.Migrations
 {
     [DbContext(typeof(KinderKompasDbContext))]
-    partial class KinderKompasDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260722190503_KennisbankToewijzing")]
+    partial class KennisbankToewijzing
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

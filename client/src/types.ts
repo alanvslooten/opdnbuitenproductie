@@ -850,6 +850,7 @@ export interface KennisbankItemDto {
   titel: string;
   categorie: string | null;
   gewijzigdOp: Iso;
+  toegewezenMedewerkerIds: string[];
 }
 
 export interface KennisbankDocumentDto {
@@ -858,10 +859,12 @@ export interface KennisbankDocumentDto {
   categorie: string | null;
   inhoud: string;
   gewijzigdOp: Iso;
+  toegewezenMedewerkerIds: string[];
 }
 
 export interface KennisbankInvoer {
   titel: string;
   categorie: string | null;
   inhoud: string;
+  toegewezenMedewerkerIds: string[];
 }

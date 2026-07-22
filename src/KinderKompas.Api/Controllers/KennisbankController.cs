@@ -1,5 +1,6 @@
 using FluentValidation;
 using KinderKompas.Api.Validatie;
+using KinderKompas.Application.Abstractions;
 using KinderKompas.Application.Kennisbank;
 using KinderKompas.Domain.Autorisatie;
 using KinderKompas.Domain.Entiteiten;
@@ -23,12 +24,21 @@ public sealed class KennisbankController : ControllerBase
 {
     private readonly KinderKompasDbContext _db;
     private readonly IValidator<KennisbankInvoer> _validator;
+    private readonly ICurrentUser _huidigeGebruiker;
 
-    public KennisbankController(KinderKompasDbContext db, IValidator<KennisbankInvoer> validator)
+    public KennisbankController(
+        KinderKompasDbContext db, IValidator<KennisbankInvoer> validator, ICurrentUser huidigeGebruiker)
     {
         _db = db;
         _validator = validator;
+        _huidigeGebruiker = huidigeGebruiker;
     }
+
+    // De beheerder ziet en beheert alle documenten; een medewerker ziet alleen
+    // documenten voor iedereen of documenten die aan hém zijn toegewezen.
+    private bool MagBeheren => _huidigeGebruiker.Heeft(Capabilities.MagInstellingenBeheren);
+
+    private bool MagZien(KennisbankDocument d) => MagBeheren || d.ZichtbaarVoor(_huidigeGebruiker.MedewerkerId);
 
     /// <summary>De documenten (kort: titel + categorie), gesorteerd op categorie en titel.</summary>
     [HttpGet]
@@ -37,7 +47,7 @@ public sealed class KennisbankController : ControllerBase
         var documenten = await _db.KennisbankDocumenten.AsNoTracking()
             .OrderBy(d => d.Categorie).ThenBy(d => d.Titel)
             .ToListAsync(ct);
-        return Ok(documenten.Select(KennisbankMapper.NaarItem).ToList());
+        return Ok(documenten.Where(MagZien).Select(KennisbankMapper.NaarItem).ToList());
     }
 
     /// <summary>Eén document met volledige inhoud.</summary>
@@ -45,8 +55,16 @@ public sealed class KennisbankController : ControllerBase
     public async Task<ActionResult<KennisbankDocumentDto>> Detail(Guid id, CancellationToken ct)
     {
         KennisbankDocument? doc = await _db.KennisbankDocumenten.AsNoTracking().FirstOrDefaultAsync(d => d.Id == id, ct);
-        return doc is null ? NotFound() : Ok(KennisbankMapper.NaarDto(doc));
+        if (doc is null || !MagZien(doc))
+        {
+            return NotFound();
+        }
+        return Ok(KennisbankMapper.NaarDto(doc));
     }
+
+    // Normaliseert de toewijzing uit de invoer (lege lijst = voor iedereen).
+    private static List<Guid> ToewijzingUit(KennisbankInvoer invoer) =>
+        invoer.ToegewezenMedewerkerIds?.Distinct().ToList() ?? new List<Guid>();
 
     /// <summary>Een document toevoegen (beheerder).</summary>
     [HttpPost]
@@ -63,6 +81,7 @@ public sealed class KennisbankController : ControllerBase
             Titel = invoer.Titel.Trim(),
             Categorie = string.IsNullOrWhiteSpace(invoer.Categorie) ? null : invoer.Categorie.Trim(),
             Inhoud = invoer.Inhoud,
+            ToegewezenMedewerkerIds = ToewijzingUit(invoer),
         };
         _db.KennisbankDocumenten.Add(doc);
         await _db.SaveChangesAsync(ct);
@@ -88,6 +107,7 @@ public sealed class KennisbankController : ControllerBase
         doc.Titel = invoer.Titel.Trim();
         doc.Categorie = string.IsNullOrWhiteSpace(invoer.Categorie) ? null : invoer.Categorie.Trim();
         doc.Inhoud = invoer.Inhoud;
+        doc.ToegewezenMedewerkerIds = ToewijzingUit(invoer);
         await _db.SaveChangesAsync(ct);
         return Ok(KennisbankMapper.NaarDto(doc));
     }

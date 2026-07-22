@@ -94,7 +94,10 @@ input,select,textarea,button{font-family:inherit}
 /* ══════════════════════════════════
    ANIMATIONS
 ══════════════════════════════════ */
-@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+/* Alleen opacity (geen transform): een transform op .view zou een containing block
+   vormen voor position:fixed, waardoor modals/overlays binnen .view i.p.v. het scherm
+   worden gepositioneerd (en afgekapt raken op korte pagina's). */
+@keyframes fadeUp{from{opacity:0}to{opacity:1}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes pop{0%{transform:scale(.92);opacity:0}65%{transform:scale(1.02)}100%{transform:scale(1);opacity:1}}
 @keyframes slideR{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
