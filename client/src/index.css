@@ -309,6 +309,21 @@ html{font-size:clamp(13px,1.1vw,15px)}
 .chip-need{background:var(--amber-l);color:var(--amber)}
 .chip-over{background:var(--rose-l);color:var(--rose)}
 
+/* Klikbare kind-chip in de weekplanning: duidelijk aantikbaar om een kind
+   incidenteel te verplaatsen (ruildag/andere groep/afwezig). Een swap-icoon
+   verschijnt bij hover als affordance; al verplaatste kinderen zijn violet gevuld. */
+.plan-kind{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:500;line-height:1.25;
+  padding:4px 9px;border-radius:var(--r-pill);background:var(--surface2);border:1px solid var(--border);
+  color:var(--text2);cursor:pointer;transition:.13s;max-width:100%}
+.plan-kind:hover{background:var(--blue-m);border-color:var(--blue);color:var(--blue)}
+.plan-kind:focus-visible{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-m)}
+.plan-kind .kind-swap{font-size:12px;width:0;opacity:0;overflow:hidden;transition:.13s}
+.plan-kind:hover .kind-swap{width:13px;opacity:.85}
+.plan-kind-afwijk{background:var(--indigo-l);border-color:var(--indigo);color:var(--indigo);font-weight:600}
+.plan-kind-afwijk:hover{background:var(--indigo);border-color:var(--indigo);color:#fff}
+.plan-kind-afwijk .kind-cog{font-size:12px}
+.plan-kinderen{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-top:6px}
+
 /* ══════════════════════════════════
    TABLES
 ══════════════════════════════════ */

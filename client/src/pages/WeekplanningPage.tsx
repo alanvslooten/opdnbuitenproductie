@@ -66,6 +66,14 @@ export function WeekplanningPage() {
         </button>
       </div>
 
+      <div className="alert alert-info" style={{ marginBottom: 12 }}>
+        <i className="ti ti-hand-click" />
+        <span>
+          Tip: klik op een <strong>naam</strong> om dat kind die dag incidenteel te verplaatsen naar een
+          andere groep, een ruildag te maken of het afwezig te melden.
+        </span>
+      </div>
+
       {isLoading && (
         <div className="loader">
           <i className="ti ti-loader" /> Laden…
@@ -114,39 +122,35 @@ export function WeekplanningPage() {
                         </div>
                       )}
                       {d.kinderen.length > 0 && (
-                        <ul style={{ marginTop: 4, listStyle: 'none', fontSize: 10, color: 'var(--text3)' }}>
+                        <div className="plan-kinderen">
                           {d.kinderen.map((k) => {
                             const heeftAfwijking = afwijkingBij.has(sleutel(k.id, d.datum));
                             return (
-                              <li key={k.id}>
-                                <button
-                                  type="button"
-                                  className="lnk"
-                                  title="Dagplaatsing wijzigen (ruildag, andere groep, afwezig)"
-                                  onClick={() =>
-                                    setGekozen({
-                                      kindId: k.id,
-                                      naam: k.voornaam,
-                                      datum: d.datum,
-                                      groepId: g.stamgroepId,
-                                    })
-                                  }
-                                  style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    padding: 0,
-                                    font: 'inherit',
-                                    color: heeftAfwijking ? 'var(--violet)' : 'var(--text3)',
-                                    fontWeight: heeftAfwijking ? 600 : 400,
-                                    cursor: 'pointer',
-                                  }}
-                                >
-                                  {heeftAfwijking && <i className="ti ti-calendar-cog" style={{ fontSize: 9 }} />} {k.voornaam}
-                                </button>
-                              </li>
+                              <button
+                                key={k.id}
+                                type="button"
+                                className={`plan-kind${heeftAfwijking ? ' plan-kind-afwijk' : ''}`}
+                                title={
+                                  heeftAfwijking
+                                    ? `${k.voornaam} — dagplaatsing gewijzigd. Klik om aan te passen.`
+                                    : `Klik om ${k.voornaam} incidenteel te verplaatsen (andere groep, ruildag of afwezig)`
+                                }
+                                onClick={() =>
+                                  setGekozen({
+                                    kindId: k.id,
+                                    naam: k.voornaam,
+                                    datum: d.datum,
+                                    groepId: g.stamgroepId,
+                                  })
+                                }
+                              >
+                                {heeftAfwijking && <i className="ti ti-calendar-cog kind-cog" />}
+                                {k.voornaam}
+                                {!heeftAfwijking && <i className="ti ti-arrows-exchange kind-swap" />}
+                              </button>
                             );
                           })}
-                        </ul>
+                        </div>
                       )}
                     </td>
                   ))}
@@ -164,10 +168,13 @@ export function WeekplanningPage() {
         </div>
       )}
 
-      <p style={{ marginTop: 12, fontSize: 10, color: 'var(--text3)' }}>
+      <p style={{ marginTop: 12, fontSize: 10, color: 'var(--text3)', display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
         BKR-badge per dag: aantal kinderen · vereiste begeleiders. Rood = boven het wettelijk groepsmaximum.
-        Klik een kind om een dagplaatsing te wijzigen (ruildag, andere groep, afwezig);
-        <i className="ti ti-calendar-cog" style={{ color: 'var(--violet)' }} /> markeert een afwijking.
+        <span style={{ marginLeft: 6 }}>Een</span>
+        <span className="plan-kind plan-kind-afwijk" style={{ cursor: 'default', pointerEvents: 'none' }}>
+          <i className="ti ti-calendar-cog kind-cog" /> naam
+        </span>
+        <span>markeert een kind met een gewijzigde dagplaatsing.</span>
       </p>
 
       {gekozen && stamgroepen && (
